@@ -1,32 +1,26 @@
+#include "timespy.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
 #include <stdbool.h>
 
-/* FYI the first created new line happens because of the awesome-client command in the awesome.sh file */
 
-typedef struct{
-    char* name;
-    uint8_t size;
-    uint16_t time;
-} Application;
 
-typedef struct{
-    char* name;
-    Application* application; // Because it belongs to a webbrowers which is a Application
-    uint16_t time;
-} WebPage;
-
-void addTime(char* file, Application* application, int count);
-
-int main(){
-
+ApplicationTracker* getOpenApplications(char* script){
     // File gets a pointer which can access it
     FILE *pp;
-    pp = popen("./awesome.sh", "r");
+    pp = popen(script, "r");
+    if(pp == NULL){
+        fprintf(stderr, "Couldnt get input from awesome.sh");
+        exit(1);
+    }
 
-    Application* application = calloc(10, sizeof(Application));
+    ApplicationTracker* applicationTracker = calloc(1, sizeof(ApplicationTracker));
+
+    applicationTracker->application = calloc(10, sizeof(Application));
+
+    Application* application = applicationTracker->application;
 
     // counts the found applications from awesome.sh
     int count = 0;
@@ -37,47 +31,36 @@ int main(){
         char buf[100];
         line = fgets(buf, sizeof buf, pp);
         if (line == NULL) break;
-        int size = 0;
 
-        // gets the size of the word in line
-        while(line[size] != '\n'){
-            size++;
-            if(line[size] == '\0')
-                break;
+        int size = strcspn(line, "\n");
+        line[size] = '\0';
+
+        application[count].name = (char*)malloc(size + 1);
+
+        for(int i = 0; i < count; i++){
+            if(strcmp(application[i].name, line) == 0){
+                count--;
+            }
         }
-        application[count].name = (char*)malloc(size - 1);
 
         // copy line to application
-        for(int i = 0; i < size; i++){
-            application[count].name[i] = line[i];
+        if(strcpy(application[count].name, line) == NULL){
+            fprintf(stderr, "strcpy failed to copy line into application[count].name");
         }
         application[count].size = size;
 
         count++;
+        if(count >= 10){
+            fprintf(stderr, "Buffer overflow! More applications than handable");
+            exit(1);
+        }
     }
-
+    applicationTracker->count = count;
     pclose(pp);
-    
-    FILE *fptr;
-    fptr = fopen ("DB.json", "r");
-    if(fptr == NULL){
-        printf("File does not exist!\n");
-        fptr = fopen ("DB.json", "w");
-        fprintf(fptr, "{\n");
-        fprintf(fptr, "}");
-    }
-    fclose(fptr);
-
-    addTime("DB.json", application, count);
-
-
-    for(int i = 0; i < count; i++){
-        if(application[i].name != NULL)
-            free(application[i].name);
-    }
-
-    return 0;
+    return applicationTracker;
 }
+
+void addTime(char* file, Application* application, int count);
 
 void checkApplication(char* file, Application* application, int count){
     FILE *fptr;
@@ -163,8 +146,8 @@ void addApplication(char* file, Application* application, int count){
         endline++;
     }
 
-
     rewind(fptr);
+    printf("Application: %s\n", application[0].name);
     // For add every not existing application
     while(1){
         for(int i = 0; i < count; i++){
@@ -252,17 +235,3 @@ void addApplication(char* file, Application* application, int count){
         }
     }
 }
-
-
-void addTime(char* file, Application* application, int count){
-    FILE *fptr;
-    fptr = fopen(file, "r");
-    char *line;
-
-    checkApplication(file, application, count);
-    
-    addApplication(file, application, count);
-}
-
-
-/* Potentional bug still exist where if there a two windows open on the same tag he will register both, but how should this then work with xdotool? */
