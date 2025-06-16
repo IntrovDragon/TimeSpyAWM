@@ -1,13 +1,17 @@
-#include "json.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "hashtable.c"
+#include "json.h"
 
 
 int main(){
     char *jsonString = "{\"name\": \"Alice\",\n\"age\": 30,\n\"isStudent\": false,\n\"courses\": [\"Math\", \"Science\"]\n}";
 
     Token* token = token_tokenizer(jsonString);
+
+    JsonObject* jsonObject = parse_object(token);
+    printf("Type: %s, Key: %s, Value: %s\n", jsonObject->item[0].type, jsonObject->item[0].key, (char*)jsonObject->item[0].value);
 
     for(int i = 0; i < token->count; i++){
         printf("%s\n", token->tokens[i]);
@@ -24,6 +28,7 @@ Token* token_tokenizer(char *string){
     Token* token = calloc(1, sizeof(Token));
     token->maxNumber = 4;
     token->tokens = (char**)malloc(sizeof(char*) * token->maxNumber);
+    token->index = 0;
 
     int count = token->count;
     for(int i = 0; string[i] != '\0'; i++){
@@ -108,7 +113,7 @@ Token* token_tokenizer(char *string){
                     token->tokens[count][n] = string[i];
                     i++;
                 }
-                if(string[i] >= '0' && string[i] <= '9'){
+                if(string[i + 1] >= '0' && string[i + 1] <= '9'){
                         fprintf(stderr, "Error: Integer seperated by unknown character!, Line: %d, Function: %s\n", __LINE__, __func__);
                         exit(1);
                 }
@@ -127,6 +132,7 @@ Token* token_string_resizer(Token *token){
     Token* resized = calloc(1, sizeof(Token));
     resized->maxNumber = token->maxNumber*  2;
     resized->count = token->count;
+    resized->index = token->index;
     resized->tokens = (char**)realloc(token->tokens, sizeof(char*) * resized->maxNumber);
     if(resized->tokens == NULL){
         fprintf(stderr, "Realloc not worked!\n");
@@ -137,8 +143,82 @@ Token* token_string_resizer(Token *token){
 }
 
 
-JsonObject* parse_object(char *string, uint32_t position){
-    JsonObject* jsonObject = malloc(sizeof(JsonObject));
-
+JsonObject* parse_object(Token* token){
+    JsonObject* jsonObject = hs_create(Size); //have to use Size currently else it will create a bug and crash!
+    int index = 0;
+    while(strcmp(token->tokens[token->index], "CloseBrace") != 0){
+        index = token_function_finder(token, &(jsonObject->item[index]), index);
+    }
     return jsonObject;
+}
+
+// need to rewrite this section... pretty inefficient
+// maybe i could turn the token char** into enums then i could use switch case :D
+int token_function_finder(Token *token, JsonKeyValue* item, int objectIndex){
+    int index = token->index;
+    if(strcmp(token->tokens[index], "OpenBrace") == 0){
+
+    }
+    else if(strcmp(token->tokens[index], "CloseBrace") == 0){
+
+    }
+    else if(strcmp(token->tokens[index], "OpenBraket") == 0){
+
+    }
+    else if(strcmp(token->tokens[index], "CloseBraket") == 0){
+
+    }
+    else if(strcmp(token->tokens[index], "Comma") == 0){
+
+    }
+    else if(strcmp(token->tokens[index], "Colon") == 0){
+
+    }
+    else if(strcmp(token->tokens[index], "String") == 0){
+        // If this is true i know that i am dealing with the key and not the value!
+        if(strcmp(token->tokens[index+2], "Colon") == 0){
+            // printf("Key after colon: %s\n",  token->tokens[index+1]);
+            item->key = malloc(sizeof(char*) * 64);
+            if(strcpy(item->key, token->tokens[index+1]) == 0){
+                fprintf(stderr, "Error: strcpy failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
+                exit(1);
+            }
+            if(objectIndex == 0){
+                token->index++;
+                return 0;
+            }
+            else
+            {
+                token->index++;
+                return objectIndex;
+            }
+        }
+        else{
+            // printf("Key: %s\n",  token->tokens[index+1]);
+            item->type = malloc(sizeof("String"));
+            if(strcpy(item->type, "String") == 0){
+                fprintf(stderr, "Error: strcpy failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
+                exit(1);
+            }
+
+            item->value = malloc(sizeof(token->tokens[index+1]));
+            if(strcpy(item->value, token->tokens[index+1]) == 0){
+                fprintf(stderr, "Error: strcpy failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
+                exit(1);
+            }
+        }
+
+    }
+    else if(strcmp(token->tokens[index], "Integer") == 0){
+
+    }
+    // he doesnt understand it if its a actual string value
+    // else{
+    //     printf("%s\n", token->tokens[index]);
+    //     fprintf(stderr, "Error: unknown token, Line: %d, Function: %s", __LINE__, __FUNCTION__);
+    //     exit(1);
+    // }
+    token->index++;
+    objectIndex++;
+    return objectIndex;
 }

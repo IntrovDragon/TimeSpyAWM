@@ -2,44 +2,44 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "json.h"
 #include "hashtable.h"
-
 
 
 /**
 * Allocates and initializes a hash table with the specified size.
-* @param size The maximum number of items the hash table can hold.
+* @param size The maximum number of item the hash table can hold.
 * @return A pointer to the newly created hash table.
 */
 
-hash_table* hs_create(int size){
-    // Allocate memory for a hash_table structure
-    hash_table* table = malloc(sizeof(hash_table));
+JsonObject* hs_create(int size){
+    // Allocate memory for a JsonObject structure
+    JsonObject* table = malloc(sizeof(JsonObject));
 
-    // Set the maximum number of items the hash table can hold
+    // Set the maximum number of item the hash table can hold
     table->maxNumber = size;
 
-    // Initialize the count of items in the hash table to 0
+    // Initialize the count of item in the hash table to 0
     table->count = 0;
 
-    // Allocate memory for an array of hs_item pointers, initialized to NULL
-    table->items = calloc(size, sizeof(hs_item*));
-    if(table->items == NULL){
+    // Allocate memory for an array of JsonKeyValue pointers, initialized to NULL
+    table->item = calloc(size, sizeof(JsonObject*));
+    if(table->item == NULL){
         fprintf(stderr, "Error, couldnt allocate memory!\n");
         exit(1);
     }
-    // Return the newly created hash_table
+    // Return the newly created JsonObject
     return table;
 }
 
 
 // Searches for an item in a hash table based on a given key.
 // Returns the found item if the key exists, otherwise returns NULL.
-hs_item* hs_search_item(hash_table* table, char* key) {
+JsonKeyValue* hs_search_item(JsonObject* table, char* key) {
     int keyCounter = hs_hashfunction(key);
     for (int counter = 0; counter < Size; counter++) {
-        hs_item* item = table->items[keyCounter];
-        if (item != NULL && strcmp(item->key, key) == 0) {
+        JsonKeyValue* item = &(table->item[keyCounter]);
+        if (item->key != NULL && strcmp(item->key, key) == 0) {
             return item;
         }
         keyCounter = (keyCounter + 1) % Size;
@@ -49,32 +49,31 @@ hs_item* hs_search_item(hash_table* table, char* key) {
 
 // Inserts a key-value pair into the hash table if the key does not already exist.
 // Returns 1 if an error occurs (e.g., memory allocation failure), otherwise returns 0.
-int hs_insert_item(hash_table* table, char* key, char* value){
+int hs_insert_item(JsonObject* table, char* key, char* value){
     if(table->count >= Size){
         printf("Table is full!!\n");
         return 1;
     }
 
-    hs_item* item = hs_search_item(table, key);
+    JsonKeyValue* item = hs_search_item(table, key);
     if(item != NULL)
         return 1; // Means item exists!
 
     int keyCounter = hs_hashfunction(key);
 
-    while(table->items[keyCounter] != NULL){
+    while(table->item[keyCounter].key != NULL){
         keyCounter++;
         keyCounter %= Size;
     }
 
-    table->items[keyCounter] = (hs_item*)malloc(sizeof(hs_item));
-    if(table->items[keyCounter] == NULL){
+    if(table->item[keyCounter].key == NULL){
         fprintf(stderr, "Error, couldnt allocate memory!\n");
         exit(1);
         return 1;
     }
 
-    table->items[keyCounter]->key = strdup(key);
-    table->items[keyCounter]->value = strdup(value);
+    table->item[keyCounter].key = strdup(key);
+    table->item[keyCounter].value = strdup(value);
     table->count++;
 
     return 0;
@@ -87,7 +86,7 @@ int hs_insert_item(hash_table* table, char* key, char* value){
 * @param table The hash table from which the item will be deleted.
 * @param item The item to be deleted.
 */
-void hs_delete_item(hash_table* table, hs_item* item){
+void hs_delete_item(JsonObject* table, JsonKeyValue* item){
     int keyCounter = 0;
     if(item == NULL){
         printf("Item is NULL!!!\n");
@@ -96,12 +95,12 @@ void hs_delete_item(hash_table* table, hs_item* item){
 
     for(int counter = 0; counter < Size; counter++){ // iterates till he either finds the key or not
 
-        if(table->items[keyCounter] != NULL && item->key == table->items[keyCounter]->key)
+        if(table->item[keyCounter].key != NULL && item->key == table->item[keyCounter].key)
         {
-            free(table->items[keyCounter]->key);
-            free(table->items[keyCounter]->value);
-            free(table->items[keyCounter]);
-            table->items[keyCounter] = NULL; // to make it a null pointer again
+            free(table->item[keyCounter].key);
+            free(table->item[keyCounter].value);
+            free(table->item);
+            table->item[keyCounter].key = NULL; // to make it a null pointer again
             table->count--;
             return;
         }
@@ -110,16 +109,16 @@ void hs_delete_item(hash_table* table, hs_item* item){
     printf("Item not found and thus not deleted.\n\n");
 }
 
-void hs_delete_table(hash_table* table){
+void hs_delete_table(JsonObject* table){
     for(int counter = 0; counter < Size; counter++){
         if(table->count == 0){
             free(table);
         }
-        if(table->items[counter] != NULL){
-            free(table->items[counter]->key);
-            free(table->items[counter]->value);
-            free(table->items[counter]);
-            table->items[counter] = NULL; // to make it a null pointer again
+        if(table->item[counter].key != NULL){
+            free(table->item[counter].key);
+            free(table->item[counter].value);
+            free(table->item);
+            table->item[counter].key = NULL; // to make it a null pointer again
             table->count--;
         }
     }
