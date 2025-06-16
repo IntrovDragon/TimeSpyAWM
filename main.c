@@ -21,15 +21,14 @@ int main(){
         fprintf(fptr, "{\n");
         fprintf(fptr, "}");
     }
+    fclose(fptr);
+
 
     int count = applicationTracker->count;
-
-    printf("Application: %s\n", application[0].name);
 
     checkApplication("DB.json", application, count);
     
     addApplication("DB.json", application, count);
-    fclose(fptr);
 
     for(int i = 0; i < count; i++){
         if(application[i].name != NULL)

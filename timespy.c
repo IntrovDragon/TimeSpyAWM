@@ -7,7 +7,7 @@
 
 
 
-ApplicationTracker* getOpenApplications(char* script){
+ApplicationTracker* application_get_open(char* script){
     // File gets a pointer which can access it
     FILE *pp;
     pp = popen(script, "r");
@@ -62,7 +62,7 @@ ApplicationTracker* getOpenApplications(char* script){
 
 void addTime(char* file, Application* application, int count);
 
-void checkApplication(char* file, Application* application, int count){
+void application_update_time(char* file, Application* application, int count){
     FILE *fptr;
     fptr = fopen(file, "r");
     char *line;
@@ -126,7 +126,8 @@ void checkApplication(char* file, Application* application, int count){
     }
 }
 
-void addApplication(char* file, Application* application, int count){
+
+void application_update_file(char* file, Application* application, int count){
     FILE *fptr;
     fptr = fopen(file, "r");
     char *line;
@@ -147,7 +148,6 @@ void addApplication(char* file, Application* application, int count){
     }
 
     rewind(fptr);
-    printf("Application: %s\n", application[0].name);
     // For add every not existing application
     while(1){
         for(int i = 0; i < count; i++){
