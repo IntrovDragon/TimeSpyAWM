@@ -169,6 +169,7 @@ int token_function_finder(Token *token, JsonKeyValue* item, int objectIndex){
 
     }
     else if(strcmp(token->tokens[index], "Comma") == 0){
+        objectIndex++;
 
     }
     else if(strcmp(token->tokens[index], "Colon") == 0){
@@ -182,15 +183,6 @@ int token_function_finder(Token *token, JsonKeyValue* item, int objectIndex){
             if(strcpy(item->key, token->tokens[index+1]) == 0){
                 fprintf(stderr, "Error: strcpy failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
                 exit(1);
-            }
-            if(objectIndex == 0){
-                token->index++;
-                return 0;
-            }
-            else
-            {
-                token->index++;
-                return objectIndex;
             }
         }
         else{
@@ -219,6 +211,5 @@ int token_function_finder(Token *token, JsonKeyValue* item, int objectIndex){
     //     exit(1);
     // }
     token->index++;
-    objectIndex++;
     return objectIndex;
 }
