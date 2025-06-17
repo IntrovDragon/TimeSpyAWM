@@ -34,6 +34,8 @@ Token* token_string_resizer(Token* token); // If expands array which holds token
 JsonObject* parse_object(Token* token);
 JsonKeyValue parse_key(Token* token);
 
+JsonKeyValue get_key_value_object(JsonObject* object, char* key); // returns the key and value from a struct inside the Object
+
 // returns only the index since it has no memory allocated
 int token_function_finder(Token* token, JsonKeyValue* item, int objectIndex);
 

@@ -23,7 +23,7 @@ JsonObject* hs_create(int size){
     table->count = 0;
 
     // Allocate memory for an array of JsonKeyValue pointers, initialized to NULL
-    table->item = calloc(size, sizeof(JsonObject*));
+    table->item = calloc(size, sizeof(JsonKeyValue));
     if(table->item == NULL){
         fprintf(stderr, "Error, couldnt allocate memory!\n");
         exit(1);
