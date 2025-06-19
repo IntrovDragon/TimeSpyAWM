@@ -131,7 +131,13 @@ void hs_delete_table(JsonObject* table){
 unsigned int hs_hashfunction(char* key){
     int keyCounter = 0;
     for(int i = 0; key[i] != 0; i++){
-        keyCounter += (int)key[i];
+        switch(key[i]){
+            case('"'):
+                break;
+            default:
+                keyCounter += (int)key[i];
+                break;
+        }
     }
     keyCounter *= 31;
     keyCounter %= Size;

@@ -11,8 +11,8 @@ int main(){
     Token* token = token_tokenizer(jsonString);
 
     JsonObject* jsonObject = parse_object(token);
-    printf("Type: %s, Key: %s, Value: %s\n", jsonObject->item[hs_hashfunction("\"name\"")].type, jsonObject->item[hs_hashfunction("name")].key, (char*)jsonObject->item[hs_hashfunction("name")].value);
-    printf("%d\n", hs_hashfunction("\"name\""));
+    JsonKeyValue item = get_key_value_object(jsonObject, "name");
+    printf("Type: %s, Key: %s, Value: %s\n\n", item.type, item.key, (char*)item.value);
 
     for(int i = 0; i < token->count; i++){
         printf("%s\n", token->tokens[i]);
@@ -149,17 +149,24 @@ JsonObject* parse_object(Token* token){
     int index = 0;
     JsonKeyValue* item = calloc(1,sizeof(JsonKeyValue));
 
+    int tmpindex = -1;
     while(strcmp(token->tokens[token->index], "CloseBrace") != 0){
         index = token_function_finder(token, item, index);
-        if(item->key != NULL){
-            // jsonObject->item[hs_hashfunction(item->key)] = item;
+
+        if(item->type != NULL && item->key != NULL && item->value != NULL){
             if(memcpy(&jsonObject->item[hs_hashfunction(item->key)], item, sizeof(JsonKeyValue)) == 0){
                 fprintf(stderr, "memcpy not worked!\n");
                 exit(1);
             }
+            // printf("%s, %s, %s\n", item->type, item->key, (char*)item->value);
+            // Resets the item 
+            item->type = NULL;
+            item->key = NULL;
+            item->value = NULL;
         }
-        item->key = NULL;
     }
+
+    free(item);
     return jsonObject;
 }
 
@@ -181,16 +188,17 @@ int token_function_finder(Token *token, JsonKeyValue* item, int objectIndex){
     }
     else if(strcmp(token->tokens[index], "Comma") == 0){
         objectIndex++;
-
     }
     else if(strcmp(token->tokens[index], "Colon") == 0){
 
     }
     else if(strcmp(token->tokens[index], "String") == 0){
         // If this is true i know that i am dealing with the key and not the value!
+        // printf("Token 2: %s\n",  token->tokens[index+1]);
+        // printf("Token 3: %s\n\n",  token->tokens[index+2]);
         if(strcmp(token->tokens[index+2], "Colon") == 0){
-            printf("Key after colon: %s\n",  token->tokens[index+1]);
-            printf("%d\n", hs_hashfunction(token->tokens[index+1]));
+            // printf("Key after colon: %s\n",  token->tokens[index+1]);
+            // printf("%d\n", hs_hashfunction(token->tokens[index+1]));
             item->key = malloc(sizeof(char*) * 64);
             if(strcpy(item->key, token->tokens[index+1]) == 0){
                 fprintf(stderr, "Error: strcpy failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
@@ -198,13 +206,13 @@ int token_function_finder(Token *token, JsonKeyValue* item, int objectIndex){
                         }
         }
         else{
-            // printf("Value: %s\n",  token->tokens[index+1]);
             item->type = malloc(sizeof("String"));
             if(strcpy(item->type, "String") == 0){
                 fprintf(stderr, "Error: strcpy failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
                 exit(1);
             }
 
+            // printf("Value: %s\n",  token->tokens[index+1]);
             item->value = malloc(sizeof(token->tokens[index+1]));
             if(strcpy(item->value, token->tokens[index+1]) == 0){
                 fprintf(stderr, "Error: strcpy failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
@@ -225,3 +233,11 @@ int token_function_finder(Token *token, JsonKeyValue* item, int objectIndex){
     token->index++;
     return objectIndex;
 }
+
+
+
+JsonKeyValue get_key_value_object(JsonObject *object, char *key){
+    JsonKeyValue jsonKeyValue = object->item[hs_hashfunction(key)];
+	return jsonKeyValue;
+}
+
