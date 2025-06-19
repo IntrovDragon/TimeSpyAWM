@@ -31,8 +31,10 @@ typedef struct{
 Token* token_tokenizer(char *string); // Takes JSON based string and returns tokens
 Token* token_string_resizer(Token* token); // If expands array which holds tokens
 
-JsonObject* parse_object(Token* token);
-JsonKeyValue parse_key(Token* token);
+JsonObject* parse_object(Token* token); // Takes tokens and turns them into object
+JsonArray* parse_array(Token* token); // Takes tokens and return a array
+JsonKeyValue parse_key(Token* token); // Takes tokens and return the json key value pair
+
 
 JsonKeyValue get_key_value_object(JsonObject* object, char* key); // returns the key and value from a struct inside the Object
 

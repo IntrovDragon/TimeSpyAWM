@@ -35,27 +35,27 @@ Token* token_tokenizer(char *string){
     for(int i = 0; string[i] != '\0'; i++){
         switch(string[i]){
             case('{'):
-                // printf("Open Curly Braket!\n");
+                // printf("Open Curly Bracket!\n");
                 token->tokens[count] = malloc(sizeof("OpenBrace"));
                 strcpy(token->tokens[count], "OpenBrace");
                 count++;
                 break;
             case('}'):
-                // printf("Close Curly Braket!\n");
+                // printf("Close Curly Bracket!\n");
                 token->tokens[count] = malloc(sizeof("CloseBrace"));
                 strcpy(token->tokens[count], "CloseBrace");
                 count++;
                 break;
             case('['):
-                // printf("Open Square Braket!\n");
-                token->tokens[count] = malloc(sizeof("OpenBraket"));
-                strcpy(token->tokens[count], "OpenBraket");
+                // printf("Open Square Bracket!\n");
+                token->tokens[count] = malloc(sizeof("OpenBracket"));
+                strcpy(token->tokens[count], "OpenBracket");
                 count++;
                 break;
             case(']'):
-                // printf("Close Square Braket!\n");
-                token->tokens[count] = malloc(sizeof("CloseBraket"));
-                strcpy(token->tokens[count], "CloseBraket");
+                // printf("Close Square Bracket!\n");
+                token->tokens[count] = malloc(sizeof("CloseBracket"));
+                strcpy(token->tokens[count], "CloseBracket");
                 count++;
                 break;
             case(','):
@@ -149,9 +149,12 @@ JsonObject* parse_object(Token* token){
     int index = 0;
     JsonKeyValue* item = calloc(1,sizeof(JsonKeyValue));
 
-    int tmpindex = -1;
     while(strcmp(token->tokens[token->index], "CloseBrace") != 0){
-        index = token_function_finder(token, item, index);
+        token_function_finder(token, item, index);
+
+        // if the token got used by another function like parse_array got called by parse_object he is one off and goes of bound! At least there is a chance for it...
+        if(token->index >= token->count)
+            break;
 
         if(item->type != NULL && item->key != NULL && item->value != NULL){
             if(memcpy(&jsonObject->item[hs_hashfunction(item->key)], item, sizeof(JsonKeyValue)) == 0){
@@ -165,9 +168,43 @@ JsonObject* parse_object(Token* token){
             item->value = NULL;
         }
     }
+    printf("Test2\n");
 
     free(item);
     return jsonObject;
+}
+
+JsonArray* parse_array(Token* token){
+    JsonArray* jsonArray = calloc(1, sizeof(JsonArray));
+    JsonKeyValue* item = calloc(1,sizeof(JsonKeyValue));
+
+    jsonArray->maxNumber = 10;
+    jsonArray->item = malloc(sizeof(JsonKeyValue) * jsonArray->maxNumber);
+
+
+    int index = 0;
+    int bracketCount = 1; // if bracket count is > 1 it means that he still goes through the array if = 0 he reached the CloseBracket
+    while(bracketCount > 0){
+        bracketCount = token_function_finder(token, item, bracketCount);
+
+        printf("objectIndex: %d \n", bracketCount);
+
+        if(item->type != NULL && item->value != NULL){
+            printf("test\n");
+            if(memcpy(&jsonArray->item[index], item, sizeof(JsonKeyValue)) == 0){
+                fprintf(stderr, "memcpy not worked!\n");
+                exit(1);
+            }
+            // printf("%s, %s, %s\n", item->type, item->key, (char*)item->value);
+            // Resets the item 
+            item->type = NULL;
+            item->key = NULL;
+            item->value = NULL;
+            index++;
+        }
+        printf("Token: %s \n", token->tokens[token->index]);
+    }
+    return jsonArray;
 }
 
 // need to rewrite this section... pretty inefficient
@@ -180,14 +217,18 @@ int token_function_finder(Token *token, JsonKeyValue* item, int objectIndex){
     else if(strcmp(token->tokens[index], "CloseBrace") == 0){
 
     }
-    else if(strcmp(token->tokens[index], "OpenBraket") == 0){
-
+    else if(strcmp(token->tokens[index], "OpenBracket") == 0){
+        // objectIndex++;
+        // printf("objectIndex: %d \n", objectIndex);
+        token->index++;
+        parse_array(token);
     }
-    else if(strcmp(token->tokens[index], "CloseBraket") == 0){
-
+    else if(strcmp(token->tokens[index], "CloseBracket") == 0){
+        // printf("objectIndex: %d \n", objectIndex);
+        objectIndex--;
+        printf("Test\n");
     }
     else if(strcmp(token->tokens[index], "Comma") == 0){
-        objectIndex++;
     }
     else if(strcmp(token->tokens[index], "Colon") == 0){
 
@@ -204,6 +245,22 @@ int token_function_finder(Token *token, JsonKeyValue* item, int objectIndex){
                 fprintf(stderr, "Error: strcpy failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
                 exit(1);
                         }
+        }
+        // need to test the code later without this... might be unneccessary :/
+        else if(strcmp(token->tokens[index+1], "Comma") == 0){
+            printf("Test\n");
+            item->type = malloc(sizeof("String"));
+            if(strcpy(item->type, "String") == 0){
+                fprintf(stderr, "Error: strcpy failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
+                exit(1);
+            }
+
+            // printf("Value: %s\n",  token->tokens[index+1]);
+            item->value = malloc(sizeof(token->tokens[index+1]));
+            if(strcpy(item->value, token->tokens[index+1]) == 0){
+                fprintf(stderr, "Error: strcpy failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
+                exit(1);
+            }
         }
         else{
             item->type = malloc(sizeof("String"));
@@ -233,7 +290,6 @@ int token_function_finder(Token *token, JsonKeyValue* item, int objectIndex){
     token->index++;
     return objectIndex;
 }
-
 
 
 JsonKeyValue get_key_value_object(JsonObject *object, char *key){
