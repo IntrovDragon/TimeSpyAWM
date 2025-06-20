@@ -11,7 +11,7 @@ int main(){
     Token* token = token_tokenizer(jsonString);
 
     JsonObject* jsonObject = parse_object(token);
-    JsonKeyValue item = get_key_value_object(jsonObject, "age");
+    JsonKeyValue item = get_key_value_object(jsonObject, "isStudent");
     printf("Type: %s, Key: %s, Value: %s\n\n", item.type, item.key, (char*)item.value);
 
     for(int i = 0; i < token->count; i++){
@@ -118,6 +118,40 @@ Token* token_tokenizer(char *string){
                 if((string[i] < '0' || string[i] > '9') && string[i] != ','&& string[i] != '{' && string[i] != '}' && string[i] != '[' && string[i] != ']' && string[i] != ':'){
                     fprintf(stderr, "Error: Integer seperated by unknown character!, Line: %d, Function: %s\n", __LINE__, __func__);
                     exit(1);
+                }
+                count++;
+                break;
+            case('t'):
+                char buf[5];
+                for(int n = 0; n < 4; n++){
+                    buf[n] = string[i];
+                    i++;
+                }
+                buf[4] = '\0';
+                if(strcmp(buf, "true") != 0){
+                    fprintf(stderr, "Error: unknown string to tokenize! Line: %d, Function: %s\n", __LINE__, __func__);
+                    exit(1);
+                }
+                else{
+                    token->tokens[count] = malloc(sizeof("true"));
+                    strcpy(token->tokens[count], "true");
+                }
+                count++;
+                break;
+            case('f'):
+                buf[6];
+                for(int n = 0; n < 5; n++){
+                    buf[n] = string[i];
+                    i++;
+                }
+                buf[5] = '\0';
+                if(strcmp(buf, "false") != 0){
+                    fprintf(stderr, "Error: unknown string to tokenize! Line: %d, Function: %s\n", __LINE__, __func__);
+                    exit(1);
+                }
+                else{
+                    token->tokens[count] = malloc(sizeof("false"));
+                    strcpy(token->tokens[count], "false");
                 }
                 count++;
                 break;
@@ -329,6 +363,82 @@ void token_function_finder(Token *token, JsonItem* jsonItem){
 
                 jsonItem->item.jsonValue.type = malloc(sizeof("Integer"));
                 if(strcpy(jsonItem->item.jsonValue.type, "Integer") == 0){
+                    fprintf(stderr, "Error: strcpy failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
+                    exit(1);
+                }
+                break;
+            default:
+                fprintf(stderr, "Error: This enum shouldnt exist!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
+                exit(1);
+                break;
+        }
+    }
+    else if(strcmp(token->tokens[index], "true") == 0){
+        switch(jsonItem->type){
+            case(JSON_VALUE):
+                jsonItem->item.jsonValue.type = malloc(sizeof("Boolean"));
+                if(strcpy(jsonItem->item.jsonValue.type, "Boolean") == 0){
+                    fprintf(stderr, "Error: strcpy failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
+                    exit(1);
+                }
+
+                jsonItem->item.jsonValue.value = malloc(sizeof(token->tokens[index]));
+                if(strcpy(jsonItem->item.jsonValue.value, token->tokens[index]) == 0){
+                    fprintf(stderr, "Error: strcpy failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
+                    exit(1);
+                }
+
+                token->index++;
+                break;
+            case(JSON_KEY_VALUE_PAIR):
+
+                jsonItem->item.jsonKeyValue.value = malloc(sizeof(token->tokens));
+                if(strcpy(jsonItem->item.jsonKeyValue.value, token->tokens[index]) == 0){
+                    fprintf(stderr, "Error: strcpy failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
+                    exit(1);
+                }
+                free(jsonItem->item.jsonKeyValue.type);
+
+                jsonItem->item.jsonValue.type = malloc(sizeof("Boolean"));
+                if(strcpy(jsonItem->item.jsonValue.type, "Boolean") == 0){
+                    fprintf(stderr, "Error: strcpy failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
+                    exit(1);
+                }
+                break;
+            default:
+                fprintf(stderr, "Error: This enum shouldnt exist!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
+                exit(1);
+                break;
+        }
+    }
+    else if(strcmp(token->tokens[index], "false") == 0){
+        switch(jsonItem->type){
+            case(JSON_VALUE):
+                jsonItem->item.jsonValue.type = malloc(sizeof("Boolean"));
+                if(strcpy(jsonItem->item.jsonValue.type, "Boolean") == 0){
+                    fprintf(stderr, "Error: strcpy failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
+                    exit(1);
+                }
+
+                jsonItem->item.jsonValue.value = malloc(sizeof(token->tokens[index]));
+                if(strcpy(jsonItem->item.jsonValue.value, token->tokens[index]) == 0){
+                    fprintf(stderr, "Error: strcpy failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
+                    exit(1);
+                }
+
+                token->index++;
+                break;
+            case(JSON_KEY_VALUE_PAIR):
+
+                jsonItem->item.jsonKeyValue.value = malloc(sizeof(token->tokens));
+                if(strcpy(jsonItem->item.jsonKeyValue.value, token->tokens[index]) == 0){
+                    fprintf(stderr, "Error: strcpy failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
+                    exit(1);
+                }
+                free(jsonItem->item.jsonKeyValue.type);
+
+                jsonItem->item.jsonValue.type = malloc(sizeof("Boolean"));
+                if(strcpy(jsonItem->item.jsonValue.type, "Boolean") == 0){
                     fprintf(stderr, "Error: strcpy failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
                     exit(1);
                 }
