@@ -146,7 +146,7 @@ Token* token_string_resizer(Token *token){
 
 JsonObject* parse_object(Token* token){
     JsonObject* jsonObject = hs_create(Size); //have to use Size currently else it will create a bug and crash!
-    int index = 0;
+
     JsonItem* jsonItem = calloc(1,sizeof(JsonItem));
     jsonItem->type = JSON_VALUE;
     JsonKeyValue* item = calloc(1,sizeof(JsonKeyValue));
@@ -158,9 +158,12 @@ JsonObject* parse_object(Token* token){
         if(token->index >= token->count)
             break;
 
+        // printf("Type: %s\n", jsonItem->item.jsonValue.type);
+        // printf("Value: %s\n", (char*)jsonItem->item.jsonValue.value);
+
         if(jsonItem->type == JSON_KEY_VALUE_PAIR){
-            if(jsonItem->item.jsonKeyValue.key != NULL){
-                printf("Test!\n");
+            if(jsonItem->item.jsonKeyValue.value != NULL){
+                printf("Test2\n");
                 item->type = jsonItem->item.jsonKeyValue.type;
                 item->key = jsonItem->item.jsonKeyValue.key;
                 item->value = jsonItem->item.jsonKeyValue.value;
@@ -175,6 +178,7 @@ JsonObject* parse_object(Token* token){
                 jsonItem->type = JSON_VALUE;
             }
             if(item->type != NULL && item->key != NULL && item->value != NULL){
+                printf("Test2\n");
                 if(memcpy(&jsonObject->item[hs_hashfunction(item->key)], item, sizeof(JsonKeyValue)) == 0){
                     fprintf(stderr, "memcpy not worked!\n");
                     exit(1);
@@ -249,7 +253,16 @@ void token_function_finder(Token *token, JsonItem* jsonItem){
         jsonItem->type = JSON_VALUE;
     }
     else if(strcmp(token->tokens[index], "Colon") == 0){
+        // if he hits a Colon i know its a key value pair!
         jsonItem->type = JSON_KEY_VALUE_PAIR;
+
+        char* type = jsonItem->item.jsonValue.type;
+        void* value = jsonItem->item.jsonValue.value;
+
+        // since the jsonItem was before a jsonValue i can change the value to key since the key gets always read first!
+        jsonItem->item.jsonKeyValue.type = type;
+        jsonItem->item.jsonKeyValue.key = value;
+        jsonItem->item.jsonKeyValue.value = NULL;
     }
     else if(strcmp(token->tokens[index], "String") == 0){
         switch(jsonItem->type){
@@ -259,24 +272,19 @@ void token_function_finder(Token *token, JsonItem* jsonItem){
                     fprintf(stderr, "Error: strcpy failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
                     exit(1);
                 }
+
                 jsonItem->item.jsonValue.value = malloc(sizeof(token->tokens[index + 1]));
-                if(strcpy(jsonItem->item.jsonValue.type, "String") == 0){
+                if(strcpy(jsonItem->item.jsonValue.value, token->tokens[index + 1]) == 0){
                     fprintf(stderr, "Error: strcpy failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
                     exit(1);
                 }
+
                 token->index++;
                 break;
             case(JSON_KEY_VALUE_PAIR):
-                printf("Test\n");
-                char* type = jsonItem->item.jsonValue.type;
-                void* value = jsonItem->item.jsonValue.value;
-                printf("%s\n", (char*)value);
-                jsonItem->type = JSON_KEY_VALUE_PAIR;
-                jsonItem->item.jsonKeyValue.type = type;
-                jsonItem->item.jsonKeyValue.value = value;
 
-                jsonItem->item.jsonKeyValue.key = malloc(sizeof(token->tokens+1));
-                if(strcpy(jsonItem->item.jsonKeyValue.key, token->tokens[index+1]) == 0){
+                jsonItem->item.jsonKeyValue.value = malloc(sizeof(token->tokens+1));
+                if(strcpy(jsonItem->item.jsonKeyValue.value, token->tokens[index+1]) == 0){
                     fprintf(stderr, "Error: strcpy failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
                     exit(1);
                 }
