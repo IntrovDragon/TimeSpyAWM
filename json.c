@@ -11,7 +11,7 @@ int main(){
     Token* token = token_tokenizer(jsonString);
 
     JsonObject* jsonObject = parse_object(token);
-    JsonKeyValue item = get_key_value_object(jsonObject, "name");
+    JsonKeyValue item = get_key_value_object(jsonObject, "age");
     printf("Type: %s, Key: %s, Value: %s\n\n", item.type, item.key, (char*)item.value);
 
     for(int i = 0; i < token->count; i++){
@@ -115,7 +115,7 @@ Token* token_tokenizer(char *string){
                     i++;
                 }
                 // Comma is the only allowed symbole for now!
-                if((string[i] < '0' || string[i] > '9') && string[i] != ','){
+                if((string[i] < '0' || string[i] > '9') && string[i] != ','&& string[i] != '{' && string[i] != '}' && string[i] != '[' && string[i] != ']' && string[i] != ':'){
                     fprintf(stderr, "Error: Integer seperated by unknown character!, Line: %d, Function: %s\n", __LINE__, __func__);
                     exit(1);
                 }
