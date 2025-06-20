@@ -43,18 +43,25 @@ typedef struct{
     uint64_t maxNumber;
 } JsonObject;
 
+// keeps track of the nested pointers. A object can hold more objects and same for arrays...
+typedef struct{
+    void** ptr;
+    uint16_t count;
+    uint16_t maxNumber;
+} PointerList;
+
 
 Token* token_tokenizer(char *string); // Takes JSON based string and returns tokens
 Token* token_string_resizer(Token* token); // If expands array which holds tokens
 
-JsonObject* parse_object(Token* token); // Takes tokens and turns them into object
-JsonArray* parse_array(Token* token); // Takes tokens and return a array
-JsonKeyValue parse_key(Token* token); // Takes tokens and return the json key value pair
+JsonObject* parse_object(Token* token, PointerList* pointerList); // Takes tokens and turns them into object
+JsonArray* parse_array(Token* token, PointerList* pointerList); // Takes tokens and return a array
+JsonKeyValue parse_key(Token* token, PointerList* pointerList); // Takes tokens and return the json key value pair
 
 
 JsonKeyValue get_key_value_object(JsonObject* object, char* key); // returns the key and value from a struct inside the Object
 
 // duno
-void token_function_finder(Token* token, JsonItem* item);
+void token_function_finder(Token* token, JsonItem* item, PointerList* pointerList);
 
 #endif

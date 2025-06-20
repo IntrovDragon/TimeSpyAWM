@@ -10,7 +10,11 @@ int main(){
 
     Token* token = token_tokenizer(jsonString);
 
-    JsonObject* jsonObject = parse_object(token);
+    PointerList* pointerList = calloc(1, sizeof(PointerList));
+    pointerList->maxNumber = 100;
+    pointerList->ptr = malloc(sizeof(void*)*pointerList->maxNumber);
+
+    JsonObject* jsonObject = parse_object(token, pointerList);
     JsonKeyValue item = get_key_value_object(jsonObject, "isStudent");
     printf("Type: %s, Key: %s, Value: %s\n\n", item.type, item.key, (char*)item.value);
 
@@ -19,6 +23,10 @@ int main(){
         free(token->tokens[i]);
     }
     free(token);
+
+    for(int i = 0; i < pointerList->count; i++){
+       free(pointerList->ptr[i]); 
+    }
 
     return 0;
 }
@@ -179,7 +187,7 @@ Token* token_string_resizer(Token *token){
 }
 
 
-JsonObject* parse_object(Token* token){
+JsonObject* parse_object(Token* token, PointerList* pointerList){
     JsonObject* jsonObject = hs_create(Size); //have to use Size currently else it will create a bug and crash!
 
     JsonItem* jsonItem = calloc(1,sizeof(JsonItem));
@@ -187,7 +195,7 @@ JsonObject* parse_object(Token* token){
     JsonKeyValue* item = calloc(1,sizeof(JsonKeyValue));
 
     while(strcmp(token->tokens[token->index], "CloseBrace") != 0){
-        token_function_finder(token, jsonItem);
+        token_function_finder(token, jsonItem, pointerList);
 
         // if the token got used by another function like parse_array got called by parse_object he is one off and goes of bound! At least there is a chance for it...
         if(token->index >= token->count)
@@ -216,11 +224,20 @@ JsonObject* parse_object(Token* token){
                     fprintf(stderr, "memcpy not worked!\n");
                     exit(1);
                 }
+
+                pointerList->ptr[pointerList->count] = jsonObject->item[hs_hashfunction(item->key)].type;
+                pointerList->count++;
+                pointerList->ptr[pointerList->count] = jsonObject->item[hs_hashfunction(item->key)].key;
+                pointerList->count++;
+                pointerList->ptr[pointerList->count] = jsonObject->item[hs_hashfunction(item->key)].value;
+                pointerList->count++;
+
                 // printf("%s, %s, %s\n", item->type, item->key, (char*)item->value);
                 // Resets the item 
                 item->type = NULL;
                 item->key = NULL;
                 item->value = NULL;
+
             }
         }
     }
@@ -264,7 +281,7 @@ JsonObject* parse_object(Token* token){
 
 // need to rewrite this section... pretty inefficient
 // maybe i could turn the token char** into enums then i could use switch case :D
-void token_function_finder(Token *token, JsonItem* jsonItem){
+void token_function_finder(Token *token, JsonItem* jsonItem, PointerList* pointerList){
     int index = token->index;
     if(strcmp(token->tokens[index], "OpenBrace") == 0){
 
