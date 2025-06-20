@@ -38,9 +38,9 @@ JsonObject* hs_create(int size){
 JsonKeyValue* hs_search_item(JsonObject* table, char* key) {
     int keyCounter = hs_hashfunction(key);
     for (int counter = 0; counter < Size; counter++) {
-        JsonKeyValue* item = &(table->item[keyCounter]);
-        if (item->key != NULL && strcmp(item->key, key) == 0) {
-            return item;
+        JsonKeyValue* jsonItem = &(table->item[keyCounter]);
+        if (jsonItem->key != NULL && strcmp(jsonItem->key, key) == 0) {
+            return jsonItem;
         }
         keyCounter = (keyCounter + 1) % Size;
     }

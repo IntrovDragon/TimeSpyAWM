@@ -22,7 +22,7 @@ typedef struct{
 } JsonValue;
 
 // F*#king love c for this :D // Just have to rewrite a bit of code.... :/
-typedef enum { JSON_KEY_VALUE_PAIR, JSON_VALUE} JsonType;
+typedef enum { JSON_VALUE = 0, JSON_KEY_VALUE_PAIR } JsonType;
 typedef struct{
     JsonType type;
     union {
@@ -38,7 +38,7 @@ typedef struct{
 } JsonArray;
 
 typedef struct{
-    JsonItem* item;
+    JsonKeyValue* item;
     uint64_t count;
     uint64_t maxNumber;
 } JsonObject;
@@ -54,7 +54,7 @@ JsonKeyValue parse_key(Token* token); // Takes tokens and return the json key va
 
 JsonKeyValue get_key_value_object(JsonObject* object, char* key); // returns the key and value from a struct inside the Object
 
-// returns only the index since it has no memory allocated
-int token_function_finder(Token* token, JsonKeyValue* item, int objectIndex);
+// duno
+void token_function_finder(Token* token, JsonItem* item);
 
 #endif
