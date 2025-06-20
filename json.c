@@ -114,9 +114,10 @@ Token* token_tokenizer(char *string){
                     token->tokens[count][n] = string[i];
                     i++;
                 }
-                if(string[i + 1] >= '0' && string[i + 1] <= '9'){
-                        fprintf(stderr, "Error: Integer seperated by unknown character!, Line: %d, Function: %s\n", __LINE__, __func__);
-                        exit(1);
+                // Comma is the only allowed symbole for now!
+                if((string[i] < '0' || string[i] > '9') && string[i] != ','){
+                    fprintf(stderr, "Error: Integer seperated by unknown character!, Line: %d, Function: %s\n", __LINE__, __func__);
+                    exit(1);
                 }
                 count++;
                 break;
@@ -163,14 +164,13 @@ JsonObject* parse_object(Token* token){
 
         if(jsonItem->type == JSON_KEY_VALUE_PAIR){
             if(jsonItem->item.jsonKeyValue.value != NULL){
-                printf("Test2\n");
                 item->type = jsonItem->item.jsonKeyValue.type;
                 item->key = jsonItem->item.jsonKeyValue.key;
                 item->value = jsonItem->item.jsonKeyValue.value;
 
 
-                printf("%s, %s, %s\n", jsonItem->item.jsonKeyValue.type, jsonItem->item.jsonKeyValue.key, (char*)jsonItem->item.jsonKeyValue.value);
-                printf("%s, %s, %s\n", item->type, item->key, (char*)item->value);
+                // printf("%s, %s, %s\n", jsonItem->item.jsonKeyValue.type, jsonItem->item.jsonKeyValue.key, (char*)jsonItem->item.jsonKeyValue.value);
+                // printf("%s, %s, %s\n", item->type, item->key, (char*)item->value);
 
                 jsonItem->item.jsonKeyValue.type = NULL;
                 jsonItem->item.jsonKeyValue.key = NULL;
@@ -178,7 +178,6 @@ JsonObject* parse_object(Token* token){
                 jsonItem->type = JSON_VALUE;
             }
             if(item->type != NULL && item->key != NULL && item->value != NULL){
-                printf("Test2\n");
                 if(memcpy(&jsonObject->item[hs_hashfunction(item->key)], item, sizeof(JsonKeyValue)) == 0){
                     fprintf(stderr, "memcpy not worked!\n");
                     exit(1);
@@ -288,72 +287,57 @@ void token_function_finder(Token *token, JsonItem* jsonItem){
                     fprintf(stderr, "Error: strcpy failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
                     exit(1);
                 }
+                free(jsonItem->item.jsonKeyValue.type);
+
+                jsonItem->item.jsonValue.type = malloc(sizeof("String"));
+                if(strcpy(jsonItem->item.jsonValue.type, "String") == 0){
+                    fprintf(stderr, "Error: strcpy failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
+                    exit(1);
+                }
                 break;
             default:
                 fprintf(stderr, "Error: This enum shouldnt exist!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
                 exit(1);
                 break;
         }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    //     // If this is true i know that i am dealing with the key and not the value!
-    //     // printf("Token 2: %s\n",  token->tokens[index+1]);
-    //     // printf("Token 3: %s\n\n",  token->tokens[index+2]);
-    //     if(strcmp(token->tokens[index+2], "Colon") == 0){
-    //         // printf("Key after colon: %s\n",  token->tokens[index+1]);
-    //         // printf("%d\n", hs_hashfunction(token->tokens[index+1]));
-    //         item->key = malloc(sizeof(char*) * 64);
-    //         if(strcpy(item->key, token->tokens[index+1]) == 0){
-    //             fprintf(stderr, "Error: strcpy failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
-    //             exit(1);
-    //                     }
-    //     }
-    //     // need to test the code later without this... might be unneccessary :/
-    //     else if(strcmp(token->tokens[index+1], "Comma") == 0){
-    //         printf("Test\n");
-    //         item->type = malloc(sizeof("String"));
-    //         if(strcpy(item->type, "String") == 0){
-    //             fprintf(stderr, "Error: strcpy failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
-    //             exit(1);
-    //         }
-    //
-    //         // printf("Value: %s\n",  token->tokens[index+1]);
-    //         item->value = malloc(sizeof(token->tokens[index+1]));
-    //         if(strcpy(item->value, token->tokens[index+1]) == 0){
-    //             fprintf(stderr, "Error: strcpy failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
-    //             exit(1);
-    //         }
-    //     }
-    //     else{
-    //         item->type = malloc(sizeof("String"));
-    //         if(strcpy(item->type, "String") == 0){
-    //             fprintf(stderr, "Error: strcpy failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
-    //             exit(1);
-    //         }
-    //
-    //         // printf("Value: %s\n",  token->tokens[index+1]);
-    //         item->value = malloc(sizeof(token->tokens[index+1]));
-    //         if(strcpy(item->value, token->tokens[index+1]) == 0){
-    //             fprintf(stderr, "Error: strcpy failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
-    //             exit(1);
-    //         }
-    //     }
-    //
     }
     else if(strcmp(token->tokens[index], "Integer") == 0){
+        switch(jsonItem->type){
+            case(JSON_VALUE):
+                jsonItem->item.jsonValue.type = malloc(sizeof("Integer"));
+                if(strcpy(jsonItem->item.jsonValue.type, "Integer") == 0){
+                    fprintf(stderr, "Error: strcpy failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
+                    exit(1);
+                }
 
+                jsonItem->item.jsonValue.value = malloc(sizeof(token->tokens[index + 1]));
+                if(strcpy(jsonItem->item.jsonValue.value, token->tokens[index + 1]) == 0){
+                    fprintf(stderr, "Error: strcpy failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
+                    exit(1);
+                }
+
+                token->index++;
+                break;
+            case(JSON_KEY_VALUE_PAIR):
+
+                jsonItem->item.jsonKeyValue.value = malloc(sizeof(token->tokens+1));
+                if(strcpy(jsonItem->item.jsonKeyValue.value, token->tokens[index+1]) == 0){
+                    fprintf(stderr, "Error: strcpy failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
+                    exit(1);
+                }
+                free(jsonItem->item.jsonKeyValue.type);
+
+                jsonItem->item.jsonValue.type = malloc(sizeof("Integer"));
+                if(strcpy(jsonItem->item.jsonValue.type, "Integer") == 0){
+                    fprintf(stderr, "Error: strcpy failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
+                    exit(1);
+                }
+                break;
+            default:
+                fprintf(stderr, "Error: This enum shouldnt exist!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
+                exit(1);
+                break;
+        }
     }
     // he doesnt understand it if its a actual string value
     // else{
