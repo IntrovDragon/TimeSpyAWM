@@ -178,7 +178,7 @@ JsonArray* parse_array(Token* token){
     JsonArray* jsonArray = calloc(1, sizeof(JsonArray));
     JsonKeyValue* item = calloc(1,sizeof(JsonKeyValue));
 
-    jsonArray->maxNumber = 10;
+    jsonArray->maxNumber = 10; // need to make a resizer function!
     jsonArray->item = malloc(sizeof(JsonKeyValue) * jsonArray->maxNumber);
 
 
@@ -234,6 +234,29 @@ int token_function_finder(Token *token, JsonKeyValue* item, int objectIndex){
 
     }
     else if(strcmp(token->tokens[index], "String") == 0){
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         // If this is true i know that i am dealing with the key and not the value!
         // printf("Token 2: %s\n",  token->tokens[index+1]);
         // printf("Token 3: %s\n\n",  token->tokens[index+2]);

@@ -17,16 +17,32 @@ typedef struct{
 } JsonKeyValue;
 
 typedef struct{
-    JsonKeyValue* item;
+    char* type;
+    void* value;
+} JsonValue;
+
+// F*#king love c for this :D // Just have to rewrite a bit of code.... :/
+typedef enum { JSON_KEY_VALUE_PAIR, JSON_VALUE} JsonType;
+typedef struct{
+    JsonType type;
+    union {
+        JsonKeyValue jsonKeyValue;
+        JsonValue jsonValue;
+    } item;
+} JsonItem;
+
+typedef struct{
+    JsonItem* item;
     uint64_t count;
     uint64_t maxNumber;
 } JsonArray;
 
 typedef struct{
-    JsonKeyValue* item; // hashtable????
+    JsonItem* item;
     uint64_t count;
     uint64_t maxNumber;
 } JsonObject;
+
 
 Token* token_tokenizer(char *string); // Takes JSON based string and returns tokens
 Token* token_string_resizer(Token* token); // If expands array which holds tokens
