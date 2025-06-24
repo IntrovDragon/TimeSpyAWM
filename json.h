@@ -4,7 +4,7 @@
 
 
 typedef struct{
-    char** tokens;
+    void** tokens;
     uint64_t count;
     uint16_t index;
     uint64_t maxNumber;
@@ -32,7 +32,7 @@ typedef struct{
 } JsonItem;
 
 typedef struct{
-    JsonItem* item;
+    JsonValue* item;
     uint64_t count;
     uint64_t maxNumber;
 } JsonArray;
@@ -50,6 +50,7 @@ typedef struct{
     uint16_t maxNumber;
 } PointerList;
 
+typedef enum {OpenBrace, CloseBrace, OpenBracket, CloseBracket, Comma, Colon, String, Integer, Btrue, Bfalse} TokenType;
 
 Token* token_tokenizer(char *string); // Takes JSON based string and returns tokens
 Token* token_string_resizer(Token* token); // If expands array which holds tokens
