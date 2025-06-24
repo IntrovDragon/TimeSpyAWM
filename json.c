@@ -6,34 +6,55 @@
 
 
 int main(){
-    char *jsonString = "{\"name\": \"Alice\",\n\"age\": 30,\n\"isStudent\": false,\n\"courses\": [\"Math\", \"Science\"]\n}";
+const char* json_array_of_objects =
+    "["
+    "  {"
+    "    \"id\": 1,"
+    "    \"name\": \"Laptop\","
+    "    \"price\": 1200.50,"
+    "    \"available\": true"
+    "  },"
+    "  {"
+    "    \"id\": 2,"
+    "    \"name\": \"Mouse\","
+    "    \"price\": 25.00,"
+    "    \"available\": false"
+    "  },"
+    "  {"
+    "    \"id\": 3,"
+    "    \"name\": \"Keyboard\","
+    "    \"price\": 75.99,"
+    "    \"available\": true"
+    "  }"
+    "]";
+    printf("%s\n", json_array_of_objects);
 
-    Token* token = token_tokenizer(jsonString);
+    Token* token = token_tokenizer(json_array_of_objects);
 
     PointerList* pointerList = calloc(1, sizeof(PointerList));
     pointerList->maxNumber = 100;
     pointerList->ptr = malloc(sizeof(void*)*pointerList->maxNumber);
 
     JsonValue* value = calloc(1, sizeof(JsonValue));
-    value->value = parse_object(token, pointerList);
+    value->value = parse_array(token, pointerList);
 
 
-    JsonObject* jsonObject = value->value;
-    JsonKeyValue item = get_key_value_object(jsonObject, "name");
-
-    printf("Type: %s, Key: %s, Value: %s\n\n", item.type, item.key, (char*)item.value);
-    item = get_key_value_object(jsonObject, "age");
-    printf("Type: %s, Key: %s, Value: %s\n\n", item.type, item.key, (char*)item.value);
-
-    item = get_key_value_object(jsonObject, "courses");
-    printf("Type: %s, Key: %s, Value: %s\n\n", item.type, item.key, (char*)item.value);
-    
-    JsonArray* jsonArray = item.value;
-    for(int i = 0; i < jsonArray->count; i++){
-        printf("Item Type: %s\n", (char*)jsonArray->item[i].type);
-        printf("Item Value: %s\n", (char*)jsonArray->item[i].value);
-    }
-    printf("\n");
+    // JsonObject* jsonObject = value->value;
+    // JsonKeyValue item = get_key_value_object(jsonObject, "name");
+    //
+    // printf("Type: %s, Key: %s, Value: %s\n\n", item.type, item.key, (char*)item.value);
+    // item = get_key_value_object(jsonObject, "age");
+    // printf("Type: %s, Key: %s, Value: %s\n\n", item.type, item.key, (char*)item.value);
+    //
+    // item = get_key_value_object(jsonObject, "courses");
+    // printf("Type: %s, Key: %s, Value: %s\n\n", item.type, item.key, (char*)item.value);
+    //
+    // JsonArray* jsonArray = item.value;
+    // for(int i = 0; i < jsonArray->count; i++){
+    //     printf("Item Type: %s\n", (char*)jsonArray->item[i].type);
+    //     printf("Item Value: %s\n", (char*)jsonArray->item[i].value);
+    // }
+    // printf("\n");
 
     // Todo: Write a better token writer func!
     for(int i = 0; i < token->count; i++){
@@ -45,6 +66,10 @@ int main(){
             case(Integer):
                 i++;
                 printf("Integer: %s\n", (char*)token->tokens[i]);
+                break;
+            case(Float):
+                i++;
+                printf("Float: %s\n", (char*)token->tokens[i]);
                 break;
             case(Btrue):
                 printf("Bool: True\n");
@@ -149,19 +174,22 @@ Token* token_tokenizer(char *string){
 
                 token->tokens[count] = malloc(sizeof(char*) * 64);
                 char number[64];
-                for(int n = 0; string[i] <= '9' && string[i] >= '0'; n++){
+                for(int n = 0; string[i] <= '9' && string[i] >= '0' || string[i] == '.'; n++){
                     *((char*)(token->tokens[count])+n) = string[i];
+                    if(string[i] == '.'){
+                        *((int*)(token->tokens[count-1])) = Float;
+                    }
                     i++;
                 }
                 // Comma is the only allowed symbole for now!
-                if((string[i] < '0' || string[i] > '9') && string[i] != ','&& string[i] != '{' && string[i] != '}' && string[i] != '[' && string[i] != ']' && string[i] != ':'){
+                if((string[i] < '0' || string[i] > '9' || string[i] == '.') && string[i] != ','&& string[i] != '{' && string[i] != '}' && string[i] != '[' && string[i] != ']' && string[i] != ':'){
                     fprintf(stderr, "Error: Integer seperated by unknown character!, Line: %d, Function: %s\n", __LINE__, __func__);
                     exit(1);
                 }
                 count++;
                 break;
             case('t'):
-                char buf[5];
+                char buf[6];
                 for(int n = 0; n < 4; n++){
                     buf[n] = string[i];
                     i++;
@@ -178,7 +206,6 @@ Token* token_tokenizer(char *string){
                 count++;
                 break;
             case('f'):
-                buf[6];
                 for(int n = 0; n < 5; n++){
                     buf[n] = string[i];
                     i++;

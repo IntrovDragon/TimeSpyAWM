@@ -50,7 +50,7 @@ typedef struct{
     uint16_t maxNumber;
 } PointerList;
 
-typedef enum {OpenBrace, CloseBrace, OpenBracket, CloseBracket, Comma, Colon, String, Integer, Btrue, Bfalse} TokenType;
+typedef enum {OpenBrace, CloseBrace, OpenBracket, CloseBracket, Comma, Colon, String, Integer, Float, Btrue, Bfalse} TokenType;
 
 Token* token_tokenizer(char *string); // Takes JSON based string and returns tokens
 Token* token_string_resizer(Token* token); // If expands array which holds tokens
