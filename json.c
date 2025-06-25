@@ -35,26 +35,24 @@ const char* json_array_of_objects =
     pointerList->maxNumber = 100;
     pointerList->ptr = malloc(sizeof(void*)*pointerList->maxNumber);
 
-    JsonValue* value = calloc(1, sizeof(JsonValue));
-    value->value = parse_array(token, pointerList);
+    JsonValue* itemValue= calloc(1, sizeof(JsonValue));
+    itemValue->value = parse_array(token, pointerList);
 
-
-    // JsonObject* jsonObject = value->value;
-    // JsonKeyValue item = get_key_value_object(jsonObject, "name");
-    //
-    // printf("Type: %s, Key: %s, Value: %s\n\n", item.type, item.key, (char*)item.value);
-    // item = get_key_value_object(jsonObject, "age");
-    // printf("Type: %s, Key: %s, Value: %s\n\n", item.type, item.key, (char*)item.value);
-    //
-    // item = get_key_value_object(jsonObject, "courses");
-    // printf("Type: %s, Key: %s, Value: %s\n\n", item.type, item.key, (char*)item.value);
-    //
-    // JsonArray* jsonArray = item.value;
-    // for(int i = 0; i < jsonArray->count; i++){
-    //     printf("Item Type: %s\n", (char*)jsonArray->item[i].type);
-    //     printf("Item Value: %s\n", (char*)jsonArray->item[i].value);
-    // }
-    // printf("\n");
+    JsonArray* jsonArray = itemValue->value;
+    JsonObject* jsonObject =(JsonObject*)jsonArray->item[0].value;
+    
+    printf("Item Type: %s\n", (char*)jsonArray->item[0].type);
+    printf("Item Value: %s\n", (char*)jsonArray->item[0].value);
+    
+    JsonKeyValue item = get_key_value_object(jsonObject, "id");
+    
+    printf("Type: %s, Key: %s, Value: %s\n", item.type, item.key, (char*)item.value);
+    
+    for(int i = 0; i < jsonArray->count; i++){
+        printf("Item Type: %s\n", (char*)jsonArray->item[i].type);
+        printf("Item Value: %s\n", (char*)jsonArray->item[i].value);
+    }
+    printf("\n");
 
     // Todo: Write a better token writer func!
     for(int i = 0; i < token->count; i++){
@@ -296,11 +294,12 @@ JsonObject* parse_object(Token* token, PointerList* pointerList){
                 pointerList->ptr[pointerList->count] = jsonObject->item[hs_hashfunction(item->key)].value;
                 pointerList->count++;
 
-                printf("In Object Type: %s, Key: %s, Value: %s\n", item->type, item->key, (char*)item->value);
+                // printf("In Object Type: %s, Key: %s, Value: %s\n", item->type, item->key, (char*)item->value);
                 // Resets the item 
                 item->type = NULL;
                 item->key = NULL;
                 item->value = NULL;
+                jsonObject->count++;
             }
         }
     }
@@ -380,8 +379,9 @@ void token_function_finder(Token *token, JsonItem* jsonItem, PointerList* pointe
                         fprintf(stderr, "Error: strcpy failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
                         exit(1);
                     }
-                    JsonObject* jsonObject= parse_object(token, pointerList);
-                    if(jsonObject->item[jsonObject->count-1].value == NULL)
+                    JsonObject* jsonObject = parse_object(token, pointerList);
+                    printf("Object Count: %d\n\n\n", jsonObject->count);
+                    if(jsonObject->count == 0)
                         break;
                     jsonItem->item.jsonValue.value = jsonObject;
                     break;
@@ -392,7 +392,7 @@ void token_function_finder(Token *token, JsonItem* jsonItem, PointerList* pointe
                         exit(1);
                     }
                     jsonObject = parse_object(token, pointerList);
-                    if(jsonObject->item[jsonObject->count-1].value == NULL)
+                    if(jsonObject->count == 0)
                         break;
                     jsonItem->item.jsonKeyValue.value = jsonObject;
                     break;
