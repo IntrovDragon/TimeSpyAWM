@@ -103,41 +103,69 @@ Token* token_tokenizer(char *string){
             case('{'):
                 // printf("Open Curly Bracket!\n");
                 token->tokens[count] = malloc(sizeof(uint8_t));
+                if(token->tokens[count] == NULL){
+                    fprintf(stderr, "Malloc failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
+                    exit(1);
+                }
                 *((int*)(token->tokens[count])) = OpenBrace;
                 count++;
                 break;
             case('}'):
                 // printf("Close Curly Bracket!\n");
                 token->tokens[count] = malloc(sizeof(uint8_t));
+                if(token->tokens[count] == NULL){
+                    fprintf(stderr, "Malloc failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
+                    exit(1);
+                }
                 *((int*)(token->tokens[count])) = CloseBrace;
                 count++;
                 break;
             case('['):
                 // printf("Open Square Bracket!\n");
                 token->tokens[count] = malloc(sizeof(uint8_t));
+                if(token->tokens[count] == NULL){
+                    fprintf(stderr, "Malloc failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
+                    exit(1);
+                }
                 *((int*)(token->tokens[count])) = OpenBracket;
                 count++;
                 break;
             case(']'):
                 // printf("Close Square Bracket!\n");
                 token->tokens[count] = malloc(sizeof(uint8_t));
+                if(token->tokens[count] == NULL){
+                    fprintf(stderr, "Malloc failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
+                    exit(1);
+                }
                 *((int*)(token->tokens[count])) = CloseBracket;
                 count++;
                 break;
             case(','):
                 // printf("Comma!\n");
                 token->tokens[count] = malloc(sizeof(uint8_t));
+                if(token->tokens[count] == NULL){
+                    fprintf(stderr, "Malloc failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
+                    exit(1);
+                }
                 *((int*)(token->tokens[count])) = Comma;
                 count++;
                 break;
             case(':'):
                 // printf("Colon!\n");
                 token->tokens[count] = malloc(sizeof(uint8_t));
+                if(token->tokens[count] == NULL){
+                    fprintf(stderr, "Malloc failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
+                    exit(1);
+                }
                 *((int*)(token->tokens[count])) = Colon;
                 count++;
                 break;
             case('"'):
                 token->tokens[count] = malloc(sizeof(uint8_t));
+                if(token->tokens[count] == NULL){
+                    fprintf(stderr, "Malloc failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
+                    exit(1);
+                }
                 *((int*)(token->tokens[count])) = String;
                 count++;
                 if(count == token->maxNumber){
@@ -145,6 +173,10 @@ Token* token_tokenizer(char *string){
                 }
 
                 token->tokens[count] = malloc(sizeof(char*) * 64);
+                if(token->tokens[count] == NULL){
+                    fprintf(stderr, "Malloc failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
+                    exit(1);
+                }
                 int index = 0;
                 i++;
                 for(; string[i] != '\"'; index++){
@@ -164,6 +196,10 @@ Token* token_tokenizer(char *string){
 
             case (int)'0' ... (int)'9':
                 token->tokens[count] = malloc(sizeof(uint8_t));
+                if(token->tokens[count] == NULL){
+                    fprintf(stderr, "Malloc failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
+                    exit(1);
+                }
                 *((int*)(token->tokens[count])) = Integer;
                 count++;
                 if(count == token->maxNumber){
@@ -171,6 +207,10 @@ Token* token_tokenizer(char *string){
                 }
 
                 token->tokens[count] = malloc(sizeof(char*) * 64);
+                if(token->tokens[count] == NULL){
+                    fprintf(stderr, "Malloc failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
+                    exit(1);
+                }
                 char number[64];
                 for(int n = 0; string[i] <= '9' && string[i] >= '0' || string[i] == '.'; n++){
                     *((char*)(token->tokens[count])+n) = string[i];
@@ -179,7 +219,7 @@ Token* token_tokenizer(char *string){
                     }
                     i++;
                 }
-                // Comma is the only allowed symbole for now!
+                // Point is the only allowed symbole for now!
                 if((string[i] < '0' || string[i] > '9' || string[i] == '.') && string[i] != ','&& string[i] != '{' && string[i] != '}' && string[i] != '[' && string[i] != ']' && string[i] != ':'){
                     fprintf(stderr, "Error: Integer seperated by unknown character!, Line: %d, Function: %s\n", __LINE__, __func__);
                     exit(1);
@@ -199,6 +239,10 @@ Token* token_tokenizer(char *string){
                 }
                 else{
                 token->tokens[count] = malloc(sizeof(uint8_t));
+                if(token->tokens[count] == NULL){
+                    fprintf(stderr, "Malloc failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
+                    exit(1);
+                }
                 *((int*)(token->tokens[count])) = Btrue;
                 }
                 count++;
@@ -215,6 +259,10 @@ Token* token_tokenizer(char *string){
                 }
                 else{
                     token->tokens[count] = malloc(sizeof(uint8_t));
+                    if(token->tokens[count] == NULL){
+                        fprintf(stderr, "Malloc failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
+                        exit(1);
+                    }
                     *((int*)(token->tokens[count])) = Btrue;
                 }
                 count++;
@@ -230,12 +278,16 @@ Token* token_tokenizer(char *string){
 
 Token* token_string_resizer(Token *token){
     Token* resized = calloc(1, sizeof(Token));
+    if(resized == NULL){
+        fprintf(stderr, "Malloc failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
+        exit(1);
+    }
     resized->maxNumber = token->maxNumber*  2;
     resized->count = token->count;
     resized->index = token->index;
     resized->tokens = (void**)realloc(token->tokens, sizeof(char*) * resized->maxNumber);
     if(resized->tokens == NULL){
-        fprintf(stderr, "Realloc not worked!\n");
+        fprintf(stderr, "Realloc failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
         exit(1);
     }
     free(token);
@@ -247,8 +299,18 @@ JsonObject* parse_object(Token* token, PointerList* pointerList){
     JsonObject* jsonObject = hs_create(Size); //have to use Size currently else it will create a bug and crash!
 
     JsonItem* jsonItem = calloc(1,sizeof(JsonItem));
+    if(jsonItem == NULL){
+        fprintf(stderr, "Malloc failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
+        exit(1);
+    }
     jsonItem->type = JSON_VALUE;
+
     JsonKeyValue* item = calloc(1,sizeof(JsonKeyValue));
+    if(item == NULL){
+        fprintf(stderr, "Malloc failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
+        exit(1);
+    }
+
     token->index++;
     int braceCounter = 1;
     while(braceCounter > 0){
@@ -312,10 +374,22 @@ JsonObject* parse_object(Token* token, PointerList* pointerList){
 
 JsonArray* parse_array(Token* token, PointerList* pointerList){
     JsonArray* jsonArray = calloc(1, sizeof(JsonArray));
+    if(jsonArray == NULL){
+        fprintf(stderr, "Malloc failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
+        exit(1);
+    }
     JsonItem* jsonItem = calloc(1,sizeof(JsonItem));
+    if(jsonItem == NULL){
+        fprintf(stderr, "Malloc failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
+        exit(1);
+    }
 
     jsonArray->maxNumber = 10; // need to make a resizer function!
     jsonArray->item = malloc(sizeof(JsonKeyValue) * jsonArray->maxNumber);
+    if(jsonArray->item == NULL){
+        fprintf(stderr, "Malloc failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
+        exit(1);
+    }
 
     token->index++;
 
@@ -380,7 +454,6 @@ void token_function_finder(Token *token, JsonItem* jsonItem, PointerList* pointe
                         exit(1);
                     }
                     JsonObject* jsonObject = parse_object(token, pointerList);
-                    printf("Object Count: %d\n\n\n", jsonObject->count);
                     if(jsonObject->count == 0)
                         break;
                     jsonItem->item.jsonValue.value = jsonObject;
@@ -606,12 +679,6 @@ void token_function_finder(Token *token, JsonItem* jsonItem, PointerList* pointe
         default:
             break;
     }
-    // he doesnt understand it if its a actual string value
-    // else{
-    //     printf("%s\n", token->tokens[index]);
-    //     fprintf(stderr, "Error: unknown token, Line: %d, Function: %s", __LINE__, __FUNCTION__);
-    //     exit(1);
-    // }
     token->index++;
 }
 
