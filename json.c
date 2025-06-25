@@ -6,34 +6,18 @@
 
 
 int main(){
-const char* json_array_of_objects =
-    "["
-    "  {"
-    "    \"id\": 1,"
-    "    \"name\": \"Laptop\","
-    "    \"price\": 1200.50,"
-    "    \"available\": true"
-    "  },"
-    "  {"
-    "    \"id\": 2,"
-    "    \"name\": \"Mouse\","
-    "    \"price\": 25.00,"
-    "    \"available\": false"
-    "  },"
-    "  {"
-    "    \"id\": 3,"
-    "    \"name\": \"Keyboard\","
-    "    \"price\": 75.99,"
-    "    \"available\": true"
-    "  }"
-    "]";
+      const char* json_array_of_objects =
+        "[\n"
+        "  {\"id\": 1, \"item\": \"Laptop\"},\n"
+        "  {\"id\": 2, \"item\": \"Mouse\"},\n"
+        "  {\"id\": 3, \"item\": \"Keyboard\"}\n"
+        "]";
+
     printf("%s\n", json_array_of_objects);
 
     Token* token = token_tokenizer(json_array_of_objects);
 
-    PointerList* pointerList = calloc(1, sizeof(PointerList));
-    pointerList->maxNumber = 100;
-    pointerList->ptr = malloc(sizeof(void*)*pointerList->maxNumber);
+    PointerList* pointerList = create_pointer_list();
 
     JsonValue* itemValue= calloc(1, sizeof(JsonValue));
     itemValue->value = parse_array(token, pointerList);
@@ -41,54 +25,16 @@ const char* json_array_of_objects =
     JsonArray* jsonArray = itemValue->value;
     JsonObject* jsonObject =(JsonObject*)jsonArray->item[0].value;
     
-    printf("Item Type: %s\n", (char*)jsonArray->item[0].type);
-    printf("Item Value: %s\n", (char*)jsonArray->item[0].value);
-    
-    JsonKeyValue item = get_key_value_object(jsonObject, "id");
-    
-    printf("Type: %s, Key: %s, Value: %s\n", item.type, item.key, (char*)item.value);
-    
-    for(int i = 0; i < jsonArray->count; i++){
-        printf("Item Type: %s\n", (char*)jsonArray->item[i].type);
-        printf("Item Value: %s\n", (char*)jsonArray->item[i].value);
-    }
-    printf("\n");
-
-    // Todo: Write a better token writer func!
+    // Need function to free the memory
     for(int i = 0; i < token->count; i++){
-        switch(*(int*)token->tokens[i]){
-            case(String):
-                i++;
-                printf("String: %s\n", (char*)token->tokens[i]);
-                break;
-            case(Integer):
-                i++;
-                printf("Integer: %s\n", (char*)token->tokens[i]);
-                break;
-            case(Float):
-                i++;
-                printf("Float: %s\n", (char*)token->tokens[i]);
-                break;
-            case(Btrue):
-                printf("Bool: True\n");
-                break;
-            case(Bfalse):
-                printf("Bool: False\n");
-                break;
-            default:
-                printf("Anything else: %d\n", *(int*)(token->tokens[i]));
-                break;
-        }
         free(token->tokens[i]);
     }
+
     free(token);
-    for(int i = 0; i < pointerList->count; i++){
-       free(pointerList->ptr[i]); 
-    }
+    free_pointer_list(pointerList);
 
     return 0;
 }
-
 
 
 Token* token_tokenizer(char *string){
@@ -180,7 +126,7 @@ Token* token_tokenizer(char *string){
                 int index = 0;
                 i++;
                 for(; string[i] != '\"'; index++){
-                    if(string[index] == '\n' || string[index] == '\0'){
+                    if(string[index] == '\0'){
                         fprintf(stderr, "Error: String not closed, Line: %d, Function: %s\n", __LINE__, __func__);
                         exit(1);
                     }
@@ -349,12 +295,25 @@ JsonObject* parse_object(Token* token, PointerList* pointerList){
                 jsonObject->item[hs_hashfunction(item->key)].key = item->key;
                 jsonObject->item[hs_hashfunction(item->key)].value = item->value;
 
+                printf("Pointer Count: %d\n", pointerList->count);
                 pointerList->ptr[pointerList->count] = jsonObject->item[hs_hashfunction(item->key)].type;
                 pointerList->count++;
+                if(pointerList->count >= pointerList->maxNumber){
+                    pointerList = resize_pointer_list(pointerList);
+                }
+                printf("Pointer Count: %d\n", pointerList->count);
                 pointerList->ptr[pointerList->count] = jsonObject->item[hs_hashfunction(item->key)].key;
                 pointerList->count++;
+                if(pointerList->count >= pointerList->maxNumber){
+                    pointerList = resize_pointer_list(pointerList);
+                }
+                printf("Pointer Count: %d\n", pointerList->count);
                 pointerList->ptr[pointerList->count] = jsonObject->item[hs_hashfunction(item->key)].value;
                 pointerList->count++;
+                if(pointerList->count >= pointerList->maxNumber){
+                    pointerList = resize_pointer_list(pointerList);
+                }
+                printf("Pointer Count: %d\n", pointerList->count);
 
                 // printf("In Object Type: %s, Key: %s, Value: %s\n", item->type, item->key, (char*)item->value);
                 // Resets the item 
@@ -423,8 +382,14 @@ JsonArray* parse_array(Token* token, PointerList* pointerList){
 
                 pointerList->ptr[pointerList->count] = jsonArray->item[index].type;
                 pointerList->count++;
+                if(pointerList->count >= pointerList->maxNumber){
+                    pointerList = resize_pointer_list(pointerList);
+                }
                 pointerList->ptr[pointerList->count] = jsonArray->item[index].value;
                 pointerList->count++;
+                if(pointerList->count >= pointerList->maxNumber){
+                    pointerList = resize_pointer_list(pointerList);
+                }
 
                 // printf("%s, %s, %s\n", jsonItem->type, jsonItem->key, (char*)jsonItem->value);
                 // Resets the jsonItem 
@@ -688,3 +653,84 @@ JsonKeyValue get_key_value_object(JsonObject *object, char *key){
 	return jsonItem;
 }
 
+Token* token_print_tokens(Token* token){
+    for(int i = 0; i < token->count; i++){
+        switch(*(int*)token->tokens[i]){
+            case(OpenBrace):
+                printf("Open Brace\n");
+                break;
+            case(CloseBrace):
+                printf("Close Brace\n");
+                break;
+            case(OpenBracket):
+                printf("Open Bracket\n");
+                break;
+            case(CloseBracket):
+                printf("Close Bracket\n");
+                break;
+            case(Comma):
+                printf("Comma\n");
+                break;
+            case(Colon):
+                printf("Colon\n");
+                break;
+            case(String):
+                printf("String: %s\n", (char*)token->tokens[i+1]);
+                i++;
+                break;
+            case(Integer):
+                printf("Integer: %s\n", (char*)token->tokens[i+1]);
+                i++;
+                break;
+            case(Float):
+                printf("Float: %s\n", (char*)token->tokens[i+1]);
+                i++;
+                break;
+            case(Btrue):
+                printf("Boolean: True\n");
+                break;
+            case(Bfalse):
+                printf("Boolean: False\n");
+                break;
+            default:
+                printf("Unknown Token: %d\n", *(int*)token->tokens[i]);
+        }
+    }
+    return token;
+}
+
+PointerList* create_pointer_list(){
+    PointerList* pointerList = calloc(1, sizeof(PointerList));
+    if(pointerList == NULL){
+        fprintf(stderr, "Malloc failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
+        exit(1);
+    }
+    pointerList->maxNumber = 2;
+    pointerList->ptr = malloc(sizeof(void*) * pointerList->maxNumber);
+    if(pointerList->ptr == NULL){
+        fprintf(stderr, "Malloc failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
+        exit(1);
+    }
+    return pointerList;
+}
+
+PointerList* resize_pointer_list(PointerList* pointerList){
+    int maxNumber = pointerList->maxNumber * 2;
+    void** newPtr = realloc(pointerList->ptr, sizeof(void*) * maxNumber);
+    if(newPtr == NULL){
+        fprintf(stderr, "Realloc failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
+        exit(1);
+    }
+    pointerList->ptr = newPtr;
+    pointerList->maxNumber = maxNumber;
+
+    return pointerList;
+}
+
+void free_pointer_list(PointerList* pointerList){
+    for(int i = 0; i < pointerList->count; i++){
+        free(pointerList->ptr[i]);
+    }
+    free(pointerList->ptr);
+    free(pointerList);
+}

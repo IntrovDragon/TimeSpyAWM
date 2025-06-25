@@ -53,6 +53,7 @@ typedef struct{
 typedef enum {OpenBrace, CloseBrace, OpenBracket, CloseBracket, Comma, Colon, String, Integer, Float, Btrue, Bfalse} TokenType;
 
 Token* token_tokenizer(char *string); // Takes JSON based string and returns tokens
+Token* token_print_tokens(Token* token); // Prints the tokens
 Token* token_string_resizer(Token* token); // If expands array which holds tokens
 
 JsonObject* parse_object(Token* token, PointerList* pointerList); // Takes tokens and turns them into object
@@ -64,5 +65,9 @@ JsonKeyValue get_key_value_object(JsonObject* object, char* key); // returns the
 
 // duno
 void token_function_finder(Token* token, JsonItem* item, PointerList* pointerList);
+
+PointerList* create_pointer_list(); // Creates a pointer list with a given max number
+PointerList* resize_pointer_list(PointerList* pointerList); // Resizes the pointer list if needed
+void free_pointer_list(PointerList* pointerList); // Frees the pointer list
 
 #endif
