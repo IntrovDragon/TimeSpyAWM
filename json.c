@@ -15,25 +15,66 @@ int main(){
 
     printf("%s\n", json_array_of_objects);
 
-    Token* token = token_tokenizer(json_array_of_objects);
-
     PointerList* pointerList = create_pointer_list();
+    JsonItem* jsonItem = json_init((char*)json_array_of_objects, pointerList);
 
-    JsonValue* itemValue= calloc(1, sizeof(JsonValue));
-    itemValue->value = parse_array(token, pointerList);
-
-    JsonArray* jsonArray = itemValue->value;
-    JsonObject* jsonObject =(JsonObject*)jsonArray->item[0].value;
-    
-    // Need function to free the memory
-    for(int i = 0; i < token->count; i++){
-        free(token->tokens[i]);
-    }
-
-    free(token);
+    json_close(jsonItem);
     free_pointer_list(pointerList);
 
     return 0;
+}
+
+JsonItem* json_init(char* jsonString, PointerList* pointerList){
+    if(jsonString == NULL){
+        fprintf(stderr, "Error: JsonString is NULL!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
+        return NULL;
+    }
+    Token* token = token_tokenizer(jsonString);
+    if(token == NULL){
+        fprintf(stderr, "Error: Tokenization failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
+        return NULL;
+    }
+
+
+    JsonItem* jsonItem = calloc(1, sizeof(JsonItem));
+    if(jsonItem == NULL){
+        fprintf(stderr, "Malloc failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
+        exit(1);
+    }
+    jsonItem->type = JSON_VALUE;
+
+    token_function_finder(token, jsonItem, pointerList);
+
+    // Free the token and pointer list
+    for(int i = 0; i < token->count; i++){
+        free(token->tokens[i]);
+    }
+    free(token->tokens);
+    free(token);
+    
+    return jsonItem;
+}
+
+void json_close(JsonItem* item){
+    if(item == NULL){
+        fprintf(stderr, "Error: JsonItem is NULL!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
+        return;
+    }
+    switch(item->type){
+        case(JSON_VALUE):
+            free(item->item.jsonValue.type);
+            free(item->item.jsonValue.value);
+            break;
+        case(JSON_KEY_VALUE_PAIR):
+            free(item->item.jsonKeyValue.type);
+            free(item->item.jsonKeyValue.key);
+            free(item->item.jsonKeyValue.value);
+            break;
+        default:
+            fprintf(stderr, "Error: Unknown Type!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
+            exit(1);
+    }
+    free(item);
 }
 
 

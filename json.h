@@ -52,6 +52,11 @@ typedef struct{
 
 typedef enum {OpenBrace, CloseBrace, OpenBracket, CloseBracket, Comma, Colon, String, Integer, Float, Btrue, Bfalse} TokenType;
 
+// Function Prototypes
+
+JsonItem* json_init(char* jsonString, PointerList* pointerList); // Initializes a JsonItem struct
+void json_close(JsonItem* item); // Frees the JsonItem struct
+
 Token* token_tokenizer(char *string); // Takes JSON based string and returns tokens
 Token* token_print_tokens(Token* token); // Prints the tokens
 Token* token_string_resizer(Token* token); // If expands array which holds tokens
@@ -60,11 +65,10 @@ JsonObject* parse_object(Token* token, PointerList* pointerList); // Takes token
 JsonArray* parse_array(Token* token, PointerList* pointerList); // Takes tokens and return a array
 JsonKeyValue parse_key(Token* token, PointerList* pointerList); // Takes tokens and return the json key value pair
 
-
 JsonKeyValue get_key_value_object(JsonObject* object, char* key); // returns the key and value from a struct inside the Object
 
-// duno
-void token_function_finder(Token* token, JsonItem* item, PointerList* pointerList);
+
+void token_function_finder(Token* token, JsonItem* item, PointerList* pointerList); // Finds the function which should be called based on the token type
 
 PointerList* create_pointer_list(); // Creates a pointer list with a given max number
 PointerList* resize_pointer_list(PointerList* pointerList); // Resizes the pointer list if needed
