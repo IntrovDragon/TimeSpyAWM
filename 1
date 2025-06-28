@@ -24,83 +24,20 @@
 //     return 0;
 // }
 
-Arena* create_arena(int size){
-    if(size <= 0){
-        fprintf(stderr, "Error: Size must be greater than 0!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
-        exit(1);
-    }
-
-    Arena* arena = calloc(1, sizeof(Arena));
+Arena* create_arena(size_t size){
+    Arena* arena = malloc(sizeof(Arena));
     if(arena == NULL){
         fprintf(stderr, "Malloc failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
         exit(1);
     }
-
+    arena->size = size;
     arena->start = malloc(size);
     if(arena->start == NULL){
         fprintf(stderr, "Malloc failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
         exit(1);
     }
-    arena->size = size;
-    arena->offset = arena->start;
     return arena;
 }
-
-void* arena_alloc(Arena* arena, int size){
-    if(arena == NULL || arena->start == NULL){
-        fprintf(stderr, "Error: Arena is NULL!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
-        return NULL;
-    }
-    if(size <= 0){
-        fprintf(stderr, "Error: Size must be greater than 0!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
-        return NULL;
-    }
-    if(arena->offset + size > arena->start + arena->size){
-        fprintf(stderr, "Error: Not enough memory in arena!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
-        return NULL;
-    }
-    void* ptr = arena->offset;
-    arena->offset = arena->offset + size;
-    return ptr;
-}
-
-Arena* arena_resize(Arena* arena, int size){
-    Arena* newArena = calloc(1, sizeof(Arena));
-    if(arena == NULL || arena->start == NULL){
-        fprintf(stderr, "Error: Arena is NULL!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
-        return NULL;
-    }
-    if(size <= 0){
-        fprintf(stderr, "Error: Size must be greater than 0!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
-        return NULL;
-    }
-
-    newArena->start = malloc(size);
-    if(newArena->start == NULL){
-        fprintf(stderr, "Malloc failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
-        exit(1);
-    }
-    newArena->offset = newArena->start;
-    newArena->size = size;
-    arena->next = newArena;
-
-    return newArena;
-}
-
-void arena_destroy(Arena* arena){
-    if(arena == NULL){
-        fprintf(stderr, "Error: Arena is NULL!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
-        return;
-    }
-    Arena* current = arena;
-    while(current != NULL){
-        Arena* next = current->next;
-        free(current->start);
-        free(current);
-        current = next;
-    }
-}
-
 
 JsonItem* json_init(char* jsonString, PointerList* pointerList){
     if(jsonString == NULL){

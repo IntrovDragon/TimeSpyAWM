@@ -53,7 +53,7 @@ typedef struct{
 typedef struct Arena{
     void* start; // Pointer to the start of the memory block
     void* offset; // Pointer to the current position in the memory block
-    int64_t size; // Size of the memory block
+    int size; // Size of the memory block
     Arena* next; // Pointer to the next arena in the linked list
 } Arena;
 
@@ -61,9 +61,9 @@ typedef enum {OpenBrace, CloseBrace, OpenBracket, CloseBracket, Comma, Colon, St
 
 // Function Prototypes
 
-Arena* arena_create(int64_t size); // Creates a memory arena
-void* arena_alloc(Arena* arena, int64_t size); // Allocates memory from the arena
-Arena* arena_resize(Arena* arena, int64_t size); // Resizes the memory arena
+Arena* arena_create(int size); // Creates a memory arena
+void* arena_alloc(Arena* arena, int size); // Allocates memory from the arena
+Arena* arena_resize(Arena* arena, int size); // Resizes the memory arena
 void arena_destroy(Arena* arena); // Destroys the memory arena
 
 JsonItem* json_init(char* jsonString, PointerList* pointerList); // Initializes a JsonItem struct
