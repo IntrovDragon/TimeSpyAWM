@@ -24,11 +24,11 @@ typedef struct{
 // F*#king love c for this :D // Just have to rewrite a bit of code.... :/
 typedef enum { JSON_VALUE = 0, JSON_KEY_VALUE_PAIR } JsonType;
 typedef struct{
-    JsonType type;
     union {
         JsonKeyValue jsonKeyValue;
         JsonValue jsonValue;
     } item;
+    JsonType type;
 } JsonItem;
 
 typedef struct{
@@ -50,9 +50,21 @@ typedef struct{
     uint16_t maxNumber;
 } PointerList;
 
+typedef struct Arena{
+    void* start; // Pointer to the start of the memory block
+    void* offset; // Pointer to the current position in the memory block
+    int64_t size; // Size of the memory block
+    Arena* next; // Pointer to the next arena in the linked list
+} Arena;
+
 typedef enum {OpenBrace, CloseBrace, OpenBracket, CloseBracket, Comma, Colon, String, Integer, Float, Btrue, Bfalse} TokenType;
 
 // Function Prototypes
+
+Arena* arena_create(int64_t size); // Creates a memory arena
+void* arena_alloc(Arena* arena, int64_t size); // Allocates memory from the arena
+Arena* arena_resize(Arena* arena, int64_t size); // Resizes the memory arena
+void arena_destroy(Arena* arena); // Destroys the memory arena
 
 JsonItem* json_init(char* jsonString, PointerList* pointerList); // Initializes a JsonItem struct
 void json_close(JsonItem* item); // Frees the JsonItem struct

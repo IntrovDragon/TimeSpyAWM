@@ -5,24 +5,24 @@
 #include "json.h"
 
 
-int main(){
-      const char* json_array_of_objects =
-        "[\n"
-        "  {\"id\": 1, \"item\": \"Laptop\"},\n"
-        "  {\"id\": 2, \"item\": \"Mouse\"},\n"
-        "  {\"id\": 3, \"item\": \"Keyboard\"}\n"
-        "]";
-
-    printf("%s\n", json_array_of_objects);
-
-    PointerList* pointerList = create_pointer_list();
-    JsonItem* jsonItem = json_init((char*)json_array_of_objects, pointerList);
-
-    json_close(jsonItem);
-    free_pointer_list(pointerList);
-
-    return 0;
-}
+// int main(){
+//       const char* json_array_of_objects =
+//         "[\n"
+//         "  {\"id\": 1, \"item\": \"Laptop\"},\n"
+//         "  {\"id\": 2, \"item\": \"Mouse\"},\n"
+//         "  {\"id\": 3, \"item\": \"Keyboard\"}\n"
+//         "]";
+//
+//     printf("%s\n", json_array_of_objects);
+//
+//     PointerList* pointerList = create_pointer_list();
+//     JsonItem* jsonItem = json_init((char*)json_array_of_objects, pointerList);
+//
+//     json_close(jsonItem);
+//     free_pointer_list(pointerList);
+//
+//     return 0;
+// }
 
 JsonItem* json_init(char* jsonString, PointerList* pointerList){
     if(jsonString == NULL){
@@ -54,6 +54,7 @@ JsonItem* json_init(char* jsonString, PointerList* pointerList){
     
     return jsonItem;
 }
+
 
 void json_close(JsonItem* item){
     if(item == NULL){
@@ -88,7 +89,6 @@ Token* token_tokenizer(char *string){
     for(int i = 0; string[i] != '\0'; i++){
         switch(string[i]){
             case('{'):
-                // printf("Open Curly Bracket!\n");
                 token->tokens[count] = malloc(sizeof(uint8_t));
                 if(token->tokens[count] == NULL){
                     fprintf(stderr, "Malloc failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
@@ -98,7 +98,6 @@ Token* token_tokenizer(char *string){
                 count++;
                 break;
             case('}'):
-                // printf("Close Curly Bracket!\n");
                 token->tokens[count] = malloc(sizeof(uint8_t));
                 if(token->tokens[count] == NULL){
                     fprintf(stderr, "Malloc failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
@@ -108,7 +107,6 @@ Token* token_tokenizer(char *string){
                 count++;
                 break;
             case('['):
-                // printf("Open Square Bracket!\n");
                 token->tokens[count] = malloc(sizeof(uint8_t));
                 if(token->tokens[count] == NULL){
                     fprintf(stderr, "Malloc failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
@@ -118,7 +116,6 @@ Token* token_tokenizer(char *string){
                 count++;
                 break;
             case(']'):
-                // printf("Close Square Bracket!\n");
                 token->tokens[count] = malloc(sizeof(uint8_t));
                 if(token->tokens[count] == NULL){
                     fprintf(stderr, "Malloc failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
@@ -128,7 +125,6 @@ Token* token_tokenizer(char *string){
                 count++;
                 break;
             case(','):
-                // printf("Comma!\n");
                 token->tokens[count] = malloc(sizeof(uint8_t));
                 if(token->tokens[count] == NULL){
                     fprintf(stderr, "Malloc failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
@@ -175,7 +171,7 @@ Token* token_tokenizer(char *string){
                     i++;
                 }
 
-                // moves \0 one behind; that way " is included at the end
+                // Add the null terminator to the end of the string
                 *((char*)(token->tokens[count])+index) = '\0';
 
                 count++;
@@ -193,12 +189,11 @@ Token* token_tokenizer(char *string){
                     token = token_string_resizer(token);
                 }
 
-                token->tokens[count] = malloc(sizeof(char*) * 64);
+                token->tokens[count] = malloc(sizeof(char*) * 64); // each number has a max length of 64 bytes
                 if(token->tokens[count] == NULL){
                     fprintf(stderr, "Malloc failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
                     exit(1);
                 }
-                char number[64];
                 for(int n = 0; string[i] <= '9' && string[i] >= '0' || string[i] == '.'; n++){
                     *((char*)(token->tokens[count])+n) = string[i];
                     if(string[i] == '.'){
@@ -317,9 +312,6 @@ JsonObject* parse_object(Token* token, PointerList* pointerList){
         if(token->index >= token->count)
             break;
 
-        // printf("Type: %s\n", jsonItem->item.jsonValue.type);
-        // printf("Value: %s\n", (char*)jsonItem->item.jsonValue.value);
-
         if(jsonItem->type == JSON_KEY_VALUE_PAIR){
             if(jsonItem->item.jsonKeyValue.value != NULL){
                 item->type = jsonItem->item.jsonKeyValue.type;
@@ -336,27 +328,22 @@ JsonObject* parse_object(Token* token, PointerList* pointerList){
                 jsonObject->item[hs_hashfunction(item->key)].key = item->key;
                 jsonObject->item[hs_hashfunction(item->key)].value = item->value;
 
-                printf("Pointer Count: %d\n", pointerList->count);
                 pointerList->ptr[pointerList->count] = jsonObject->item[hs_hashfunction(item->key)].type;
                 pointerList->count++;
                 if(pointerList->count >= pointerList->maxNumber){
                     pointerList = resize_pointer_list(pointerList);
                 }
-                printf("Pointer Count: %d\n", pointerList->count);
                 pointerList->ptr[pointerList->count] = jsonObject->item[hs_hashfunction(item->key)].key;
                 pointerList->count++;
                 if(pointerList->count >= pointerList->maxNumber){
                     pointerList = resize_pointer_list(pointerList);
                 }
-                printf("Pointer Count: %d\n", pointerList->count);
                 pointerList->ptr[pointerList->count] = jsonObject->item[hs_hashfunction(item->key)].value;
                 pointerList->count++;
                 if(pointerList->count >= pointerList->maxNumber){
                     pointerList = resize_pointer_list(pointerList);
                 }
-                printf("Pointer Count: %d\n", pointerList->count);
 
-                // printf("In Object Type: %s, Key: %s, Value: %s\n", item->type, item->key, (char*)item->value);
                 // Resets the item 
                 item->type = NULL;
                 item->key = NULL;
@@ -366,7 +353,7 @@ JsonObject* parse_object(Token* token, PointerList* pointerList){
         }
     }
     fin:
-    // i have to look into memcpy... maybe he copies only the pointer and doesnt create new to a new space in the heap!?!??!
+
     free(item);
     free(jsonItem);
     return jsonObject;
@@ -414,9 +401,6 @@ JsonArray* parse_array(Token* token, PointerList* pointerList){
 
         if(jsonItem->type == JSON_VALUE){
             if(jsonItem->item.jsonValue.type != NULL && jsonItem->item.jsonValue.value != NULL){
-                // printf("test\n");
-                // printf("Type: %s\n", jsonItem->item.jsonValue.type);
-                // printf("Value: %s\n", (char*)jsonItem->item.jsonValue.value);
 
                 jsonArray->item[index].type = jsonItem->item.jsonValue.type;
                 jsonArray->item[index].value = jsonItem->item.jsonValue.value;
@@ -432,7 +416,6 @@ JsonArray* parse_array(Token* token, PointerList* pointerList){
                     pointerList = resize_pointer_list(pointerList);
                 }
 
-                // printf("%s, %s, %s\n", jsonItem->type, jsonItem->key, (char*)jsonItem->value);
                 // Resets the jsonItem 
                 jsonItem->type = JSON_VALUE;
                 jsonItem->item.jsonValue.type = NULL;
@@ -446,8 +429,6 @@ JsonArray* parse_array(Token* token, PointerList* pointerList){
     return jsonArray;
 }
 
-// need to rewrite this section... pretty inefficient
-// maybe i could turn the token char** into enums then i could use switch case :D
 void token_function_finder(Token *token, JsonItem* jsonItem, PointerList* pointerList){
     int index = token->index;
     switch(*(int*)token->tokens[index]){
@@ -516,6 +497,7 @@ void token_function_finder(Token *token, JsonItem* jsonItem, PointerList* pointe
         case(CloseBracket):
             break;
         case(Comma):
+            // functions as a reset
             jsonItem->type = JSON_VALUE;
             break;
         case(Colon):
@@ -525,7 +507,7 @@ void token_function_finder(Token *token, JsonItem* jsonItem, PointerList* pointe
             free(jsonItem->item.jsonValue.type);
             void* value = jsonItem->item.jsonValue.value;
 
-            // since the jsonItem was before a jsonValue i can change the value to key since the key gets always read first!
+            // since inside the jsonItem was a jsonValue i can change the value to key since the key gets always read first!
             jsonItem->item.jsonKeyValue.type = NULL;
             jsonItem->item.jsonKeyValue.key = value;
             jsonItem->item.jsonKeyValue.value = NULL;
