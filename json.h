@@ -54,7 +54,7 @@ typedef struct Arena{
     void* start; // Pointer to the start of the memory block
     void* offset; // Pointer to the current position in the memory block
     int size; // Size of the memory block
-    Arena* next; // Pointer to the next arena in the linked list
+    struct Arena* next; // Pointer to the next arena in the linked list
 } Arena;
 
 typedef enum {OpenBrace, CloseBrace, OpenBracket, CloseBracket, Comma, Colon, String, Integer, Float, Btrue, Bfalse} TokenType;
@@ -66,21 +66,21 @@ void* arena_alloc(Arena* arena, int size); // Allocates memory from the arena
 Arena* arena_resize(Arena* arena, int size); // Resizes the memory arena
 void arena_destroy(Arena* arena); // Destroys the memory arena
 
-JsonItem* json_init(char* jsonString, PointerList* pointerList); // Initializes a JsonItem struct
+JsonItem* json_init(char* jsonString, Arena* arena); // Initializes a JsonItem struct
 void json_close(JsonItem* item); // Frees the JsonItem struct
 
-Token* token_tokenizer(char *string); // Takes JSON based string and returns tokens
+Token* token_tokenizer(char *string, Arena* arena); // Takes JSON based string and returns tokens
 Token* token_print_tokens(Token* token); // Prints the tokens
-Token* token_string_resizer(Token* token); // If expands array which holds tokens
+Token* token_string_resizer(Token* token, Arena* arena); // If expands array which holds tokens
 
-JsonObject* parse_object(Token* token, PointerList* pointerList); // Takes tokens and turns them into object
-JsonArray* parse_array(Token* token, PointerList* pointerList); // Takes tokens and return a array
-JsonKeyValue parse_key(Token* token, PointerList* pointerList); // Takes tokens and return the json key value pair
+JsonObject* parse_object(Token* token, Arena* arena); // Takes tokens and turns them into object
+JsonArray* parse_array(Token* token, Arena* arena); // Takes tokens and return a array
+JsonKeyValue parse_key(Token* token, Arena* arena); // Takes tokens and return the json key value pair
 
 JsonKeyValue get_key_value_object(JsonObject* object, char* key); // returns the key and value from a struct inside the Object
 
 
-void token_function_finder(Token* token, JsonItem* item, PointerList* pointerList); // Finds the function which should be called based on the token type
+void token_function_finder(Token* token, JsonItem* item, Arena* arena); // Finds the function which should be called based on the token type
 
 PointerList* create_pointer_list(); // Creates a pointer list with a given max number
 PointerList* resize_pointer_list(PointerList* pointerList); // Resizes the pointer list if needed

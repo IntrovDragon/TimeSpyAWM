@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "hashtable.h"
+#include "hashtable.c"
 #include "json.h"
 
 
@@ -56,9 +56,9 @@ void* arena_alloc(Arena* arena, int size){
         return NULL;
     }
     if(arena->offset + size > arena->start + arena->size){
-        fprintf(stderr, "Error: Not enough memory in arena!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
-        return NULL;
+        arena = arena_resize(arena, arena->size);
     }
+
     void* ptr = arena->offset;
     arena->offset = arena->offset + size;
     return ptr;
@@ -102,7 +102,7 @@ void arena_destroy(Arena* arena){
 }
 
 
-JsonItem* json_init(char* jsonString, PointerList* pointerList){
+JsonItem* json_init(char* jsonString, Arena* arena){
     if(jsonString == NULL){
         fprintf(stderr, "Error: JsonString is NULL!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
         return NULL;
@@ -121,7 +121,7 @@ JsonItem* json_init(char* jsonString, PointerList* pointerList){
     }
     jsonItem->type = JSON_VALUE;
 
-    token_function_finder(token, jsonItem, pointerList);
+    token_function_finder(token, jsonItem, arena);
 
     // Free the token and pointer list
     for(int i = 0; i < token->count; i++){
@@ -157,17 +157,17 @@ void json_close(JsonItem* item){
 }
 
 
-Token* token_tokenizer(char *string){
+Token* token_tokenizer(char *string, Arena* arena){
     Token* token = calloc(1, sizeof(Token));
-    token->maxNumber = 4;
-    token->tokens = (void**)malloc(sizeof(void**) * token->maxNumber);
+    token->maxNumber = 150;
+    token->tokens = (void**)arena_alloc(arena, sizeof(void**) * token->maxNumber);
     token->index = 0;
 
     int count = token->count;
     for(int i = 0; string[i] != '\0'; i++){
         switch(string[i]){
             case('{'):
-                token->tokens[count] = malloc(sizeof(uint8_t));
+                token->tokens[count] = arena_alloc(arena, sizeof(uint8_t));
                 if(token->tokens[count] == NULL){
                     fprintf(stderr, "Malloc failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
                     exit(1);
@@ -176,7 +176,7 @@ Token* token_tokenizer(char *string){
                 count++;
                 break;
             case('}'):
-                token->tokens[count] = malloc(sizeof(uint8_t));
+                token->tokens[count] = arena_alloc(arena, sizeof(uint8_t));
                 if(token->tokens[count] == NULL){
                     fprintf(stderr, "Malloc failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
                     exit(1);
@@ -185,7 +185,7 @@ Token* token_tokenizer(char *string){
                 count++;
                 break;
             case('['):
-                token->tokens[count] = malloc(sizeof(uint8_t));
+                token->tokens[count] = arena_alloc(arena, sizeof(uint8_t));
                 if(token->tokens[count] == NULL){
                     fprintf(stderr, "Malloc failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
                     exit(1);
@@ -194,7 +194,7 @@ Token* token_tokenizer(char *string){
                 count++;
                 break;
             case(']'):
-                token->tokens[count] = malloc(sizeof(uint8_t));
+                token->tokens[count] = arena_alloc(arena, sizeof(uint8_t));
                 if(token->tokens[count] == NULL){
                     fprintf(stderr, "Malloc failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
                     exit(1);
@@ -203,7 +203,7 @@ Token* token_tokenizer(char *string){
                 count++;
                 break;
             case(','):
-                token->tokens[count] = malloc(sizeof(uint8_t));
+                token->tokens[count] = arena_alloc(arena, sizeof(uint8_t));
                 if(token->tokens[count] == NULL){
                     fprintf(stderr, "Malloc failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
                     exit(1);
@@ -213,7 +213,7 @@ Token* token_tokenizer(char *string){
                 break;
             case(':'):
                 // printf("Colon!\n");
-                token->tokens[count] = malloc(sizeof(uint8_t));
+                token->tokens[count] = arena_alloc(arena, sizeof(uint8_t));
                 if(token->tokens[count] == NULL){
                     fprintf(stderr, "Malloc failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
                     exit(1);
@@ -222,7 +222,7 @@ Token* token_tokenizer(char *string){
                 count++;
                 break;
             case('"'):
-                token->tokens[count] = malloc(sizeof(uint8_t));
+                token->tokens[count] = arena_alloc(arena, sizeof(uint8_t));
                 if(token->tokens[count] == NULL){
                     fprintf(stderr, "Malloc failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
                     exit(1);
@@ -230,10 +230,10 @@ Token* token_tokenizer(char *string){
                 *((int*)(token->tokens[count])) = String;
                 count++;
                 if(count == token->maxNumber){
-                    token = token_string_resizer(token);
+                    token = token_string_resizer(token, arena);
                 }
 
-                token->tokens[count] = malloc(sizeof(char*) * 64);
+                token->tokens[count] = arena_alloc(arena, sizeof(char*) * 64);
                 if(token->tokens[count] == NULL){
                     fprintf(stderr, "Malloc failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
                     exit(1);
@@ -247,6 +247,10 @@ Token* token_tokenizer(char *string){
                     }
                     *((char*)(token->tokens[count])+index) = string[i];
                     i++;
+                    if(index >= 64){
+                        fprintf(stderr, "Error: String too long!, Line: %d, Function: %s\n", __LINE__, __func__);
+                        exit(1);
+                    }
                 }
 
                 // Add the null terminator to the end of the string
@@ -256,7 +260,7 @@ Token* token_tokenizer(char *string){
                 break;
 
             case (int)'0' ... (int)'9':
-                token->tokens[count] = malloc(sizeof(uint8_t));
+                token->tokens[count] = arena_alloc(arena, sizeof(uint8_t));
                 if(token->tokens[count] == NULL){
                     fprintf(stderr, "Malloc failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
                     exit(1);
@@ -264,10 +268,12 @@ Token* token_tokenizer(char *string){
                 *((int*)(token->tokens[count])) = Integer;
                 count++;
                 if(count == token->maxNumber){
-                    token = token_string_resizer(token);
+                    token = token_string_resizer(token, arena);
                 }
 
-                token->tokens[count] = malloc(sizeof(char*) * 64); // each number has a max length of 64 bytes
+
+                // Still buggy need to check if number is too big!
+                token->tokens[count] = arena_alloc(arena, sizeof(char*) * sizeof(int)); // each number has a max length of 64 bytes
                 if(token->tokens[count] == NULL){
                     fprintf(stderr, "Malloc failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
                     exit(1);
@@ -298,7 +304,7 @@ Token* token_tokenizer(char *string){
                     exit(1);
                 }
                 else{
-                token->tokens[count] = malloc(sizeof(uint8_t));
+                token->tokens[count] = arena_alloc(arena, sizeof(uint8_t));
                 if(token->tokens[count] == NULL){
                     fprintf(stderr, "Malloc failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
                     exit(1);
@@ -318,7 +324,7 @@ Token* token_tokenizer(char *string){
                     exit(1);
                 }
                 else{
-                    token->tokens[count] = malloc(sizeof(uint8_t));
+                token->tokens[count] = arena_alloc(arena, sizeof(uint8_t));
                     if(token->tokens[count] == NULL){
                         fprintf(stderr, "Malloc failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
                         exit(1);
@@ -329,15 +335,15 @@ Token* token_tokenizer(char *string){
                 break;
         }
         if(count == token->maxNumber){
-            token = token_string_resizer(token);
+            token = token_string_resizer(token, arena);
         }
     }
     token->count = count;
     return token;
 }
 
-Token* token_string_resizer(Token *token){
-    Token* resized = calloc(1, sizeof(Token));
+Token* token_string_resizer(Token *token, Arena* arena){
+    Token* resized = arena_alloc(arena, sizeof(Token));
     if(resized == NULL){
         fprintf(stderr, "Malloc failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
         exit(1);
@@ -345,17 +351,23 @@ Token* token_string_resizer(Token *token){
     resized->maxNumber = token->maxNumber*  2;
     resized->count = token->count;
     resized->index = token->index;
-    resized->tokens = (void**)realloc(token->tokens, sizeof(char*) * resized->maxNumber);
+    resized->tokens = arena_alloc(arena, sizeof(void*) * resized->maxNumber);
     if(resized->tokens == NULL){
         fprintf(stderr, "Realloc failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
         exit(1);
     }
+
+    if(memcpy(resized->tokens, token->tokens, sizeof(void*) * token->count) == NULL){
+        fprintf(stderr, "Memcpy failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
+        exit(1);
+    }
+
     free(token);
     return resized;
 }
 
 
-JsonObject* parse_object(Token* token, PointerList* pointerList){
+JsonObject* parse_object(Token* token, Arena* arena){
     JsonObject* jsonObject = hs_create(Size); //have to use Size currently else it will create a bug and crash!
 
     JsonItem* jsonItem = calloc(1,sizeof(JsonItem));
@@ -384,7 +396,7 @@ JsonObject* parse_object(Token* token, PointerList* pointerList){
                     goto fin;
                 break;
         }
-        token_function_finder(token, jsonItem, pointerList);
+        token_function_finder(token, jsonItem, arena);
 
         // if the token got used by another function like parse_array got called by parse_object he is one off and goes of bound! At least there is a chance for it...
         if(token->index >= token->count)
@@ -406,22 +418,6 @@ JsonObject* parse_object(Token* token, PointerList* pointerList){
                 jsonObject->item[hs_hashfunction(item->key)].key = item->key;
                 jsonObject->item[hs_hashfunction(item->key)].value = item->value;
 
-                pointerList->ptr[pointerList->count] = jsonObject->item[hs_hashfunction(item->key)].type;
-                pointerList->count++;
-                if(pointerList->count >= pointerList->maxNumber){
-                    pointerList = resize_pointer_list(pointerList);
-                }
-                pointerList->ptr[pointerList->count] = jsonObject->item[hs_hashfunction(item->key)].key;
-                pointerList->count++;
-                if(pointerList->count >= pointerList->maxNumber){
-                    pointerList = resize_pointer_list(pointerList);
-                }
-                pointerList->ptr[pointerList->count] = jsonObject->item[hs_hashfunction(item->key)].value;
-                pointerList->count++;
-                if(pointerList->count >= pointerList->maxNumber){
-                    pointerList = resize_pointer_list(pointerList);
-                }
-
                 // Resets the item 
                 item->type = NULL;
                 item->key = NULL;
@@ -437,8 +433,8 @@ JsonObject* parse_object(Token* token, PointerList* pointerList){
     return jsonObject;
 }
 
-JsonArray* parse_array(Token* token, PointerList* pointerList){
-    JsonArray* jsonArray = calloc(1, sizeof(JsonArray));
+JsonArray* parse_array(Token* token, Arena* arena){
+    JsonArray* jsonArray = arena_alloc(arena, sizeof(JsonArray));
     if(jsonArray == NULL){
         fprintf(stderr, "Malloc failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
         exit(1);
@@ -450,7 +446,7 @@ JsonArray* parse_array(Token* token, PointerList* pointerList){
     }
 
     jsonArray->maxNumber = 10; // need to make a resizer function!
-    jsonArray->item = malloc(sizeof(JsonKeyValue) * jsonArray->maxNumber);
+    jsonArray->item = arena_alloc(arena, sizeof(JsonKeyValue) * jsonArray->maxNumber);
     if(jsonArray->item == NULL){
         fprintf(stderr, "Malloc failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
         exit(1);
@@ -471,7 +467,7 @@ JsonArray* parse_array(Token* token, PointerList* pointerList){
                     goto fin;
                 break;
         }
-        token_function_finder(token, jsonItem, pointerList);
+        token_function_finder(token, jsonItem, arena);
 
         // if the token got used by another function like parse_array got called by parse_object he is one off and goes of bound! At least there is a chance for it...
         if(token->index >= token->count)
@@ -483,17 +479,6 @@ JsonArray* parse_array(Token* token, PointerList* pointerList){
                 jsonArray->item[index].type = jsonItem->item.jsonValue.type;
                 jsonArray->item[index].value = jsonItem->item.jsonValue.value;
 
-                pointerList->ptr[pointerList->count] = jsonArray->item[index].type;
-                pointerList->count++;
-                if(pointerList->count >= pointerList->maxNumber){
-                    pointerList = resize_pointer_list(pointerList);
-                }
-                pointerList->ptr[pointerList->count] = jsonArray->item[index].value;
-                pointerList->count++;
-                if(pointerList->count >= pointerList->maxNumber){
-                    pointerList = resize_pointer_list(pointerList);
-                }
-
                 // Resets the jsonItem 
                 jsonItem->type = JSON_VALUE;
                 jsonItem->item.jsonValue.type = NULL;
@@ -504,32 +489,33 @@ JsonArray* parse_array(Token* token, PointerList* pointerList){
     }
     fin:
     jsonArray->count = index;
+    free(jsonItem);
     return jsonArray;
 }
 
-void token_function_finder(Token *token, JsonItem* jsonItem, PointerList* pointerList){
+void token_function_finder(Token *token, JsonItem* jsonItem, Arena* arena){
     int index = token->index;
     switch(*(int*)token->tokens[index]){
         case(OpenBrace):
             switch(jsonItem->type){
                 case(JSON_VALUE):
-                    jsonItem->item.jsonValue.type = malloc(sizeof("JsonObject"));
+                    jsonItem->item.jsonValue.type = arena_alloc(arena, sizeof("JsonObject"));
                     if(strcpy(jsonItem->item.jsonValue.type, "JsonObject") == 0){
                         fprintf(stderr, "Error: strcpy failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
                         exit(1);
                     }
-                    JsonObject* jsonObject = parse_object(token, pointerList);
+                    JsonObject* jsonObject = parse_object(token, arena);
                     if(jsonObject->count == 0)
                         break;
                     jsonItem->item.jsonValue.value = jsonObject;
                     break;
                 case(JSON_KEY_VALUE_PAIR):
-                    jsonItem->item.jsonKeyValue.type = malloc(sizeof("JsonObject"));
+                    jsonItem->item.jsonKeyValue.type = arena_alloc(arena, sizeof("JsonObject"));
                     if(strcpy(jsonItem->item.jsonKeyValue.type, "JsonObject") == 0){
                         fprintf(stderr, "Error: strcpy failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
                         exit(1);
                     }
-                    jsonObject = parse_object(token, pointerList);
+                    jsonObject = parse_object(token, arena);
                     if(jsonObject->count == 0)
                         break;
                     jsonItem->item.jsonKeyValue.value = jsonObject;
@@ -545,23 +531,23 @@ void token_function_finder(Token *token, JsonItem* jsonItem, PointerList* pointe
         case(OpenBracket):
             switch(jsonItem->type){
                 case(JSON_VALUE):
-                    jsonItem->item.jsonValue.type = malloc(sizeof("JsonArray"));
+                    jsonItem->item.jsonValue.type = arena_alloc(arena, sizeof("JsonArray"));
                     if(strcpy(jsonItem->item.jsonValue.type, "JsonArray") == 0){
                         fprintf(stderr, "Error: strcpy failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
                         exit(1);
                     }
-                    JsonArray* jsonArray = parse_array(token, pointerList);
+                    JsonArray* jsonArray = parse_array(token, arena);
                     if(jsonArray->item[jsonArray->count-1].value == NULL)
                         break;
                     jsonItem->item.jsonValue.value = jsonArray;
                     break;
                 case(JSON_KEY_VALUE_PAIR):
-                    jsonItem->item.jsonKeyValue.type = malloc(sizeof("JsonArray"));
+                    jsonItem->item.jsonKeyValue.type = arena_alloc(arena, sizeof("JsonArray"));
                     if(strcpy(jsonItem->item.jsonKeyValue.type, "JsonArray") == 0){
                         fprintf(stderr, "Error: strcpy failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
                         exit(1);
                     }
-                    jsonArray = parse_array(token, pointerList);
+                    jsonArray = parse_array(token, arena);
                     if(jsonArray->item[jsonArray->count-1].value == NULL)
                         break;
                     jsonItem->item.jsonKeyValue.value = jsonArray;
@@ -593,13 +579,13 @@ void token_function_finder(Token *token, JsonItem* jsonItem, PointerList* pointe
         case(String):
             switch(jsonItem->type){
                 case(JSON_VALUE):
-                    jsonItem->item.jsonValue.type = malloc(sizeof("String"));
+                    jsonItem->item.jsonValue.type = arena_alloc(arena, sizeof("String"));
                     if(strcpy(jsonItem->item.jsonValue.type, "String") == 0){
                         fprintf(stderr, "Error: strcpy failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
                         exit(1);
                     }
 
-                    jsonItem->item.jsonValue.value = malloc(sizeof(token->tokens[index + 1]));
+                    jsonItem->item.jsonValue.value = arena_alloc(arena, sizeof(token->tokens[index + 1]));
                     if(strcpy(jsonItem->item.jsonValue.value, token->tokens[index + 1]) == 0){
                         fprintf(stderr, "Error: strcpy failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
                         exit(1);
@@ -609,14 +595,14 @@ void token_function_finder(Token *token, JsonItem* jsonItem, PointerList* pointe
                     break;
                 case(JSON_KEY_VALUE_PAIR):
 
-                    jsonItem->item.jsonKeyValue.value = malloc(sizeof(token->tokens+1));
+                    jsonItem->item.jsonKeyValue.value = arena_alloc(arena, sizeof(token->tokens+1));
                     if(strcpy(jsonItem->item.jsonKeyValue.value, token->tokens[index+1]) == 0){
                         fprintf(stderr, "Error: strcpy failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
                         exit(1);
                     }
                     free(jsonItem->item.jsonKeyValue.type);
 
-                    jsonItem->item.jsonValue.type = malloc(sizeof("String"));
+                    jsonItem->item.jsonValue.type = arena_alloc(arena, sizeof("String"));
                     if(strcpy(jsonItem->item.jsonValue.type, "String") == 0){
                         fprintf(stderr, "Error: strcpy failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
                         exit(1);
@@ -631,13 +617,13 @@ void token_function_finder(Token *token, JsonItem* jsonItem, PointerList* pointe
         case(Integer):
             switch(jsonItem->type){
                 case(JSON_VALUE):
-                    jsonItem->item.jsonValue.type = malloc(sizeof("Integer"));
+                    jsonItem->item.jsonValue.type = arena_alloc(arena, sizeof("Integer"));
                     if(strcpy(jsonItem->item.jsonValue.type, "Integer") == 0){
                         fprintf(stderr, "Error: strcpy failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
                         exit(1);
                     }
 
-                    jsonItem->item.jsonValue.value = malloc(sizeof(token->tokens[index + 1]));
+                    jsonItem->item.jsonValue.value = arena_alloc(arena, sizeof(token->tokens[index + 1]));
                     if(strcpy(jsonItem->item.jsonValue.value, token->tokens[index + 1]) == 0){
                         fprintf(stderr, "Error: strcpy failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
                         exit(1);
@@ -647,14 +633,14 @@ void token_function_finder(Token *token, JsonItem* jsonItem, PointerList* pointe
                     break;
                 case(JSON_KEY_VALUE_PAIR):
 
-                    jsonItem->item.jsonKeyValue.value = malloc(sizeof(token->tokens+1));
+                    jsonItem->item.jsonKeyValue.value = arena_alloc(arena, sizeof(token->tokens[index+1]));
                     if(strcpy(jsonItem->item.jsonKeyValue.value, token->tokens[index+1]) == 0){
                         fprintf(stderr, "Error: strcpy failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
                         exit(1);
                     }
                     free(jsonItem->item.jsonKeyValue.type);
 
-                    jsonItem->item.jsonValue.type = malloc(sizeof("Integer"));
+                    jsonItem->item.jsonValue.type = arena_alloc(arena, sizeof("Integer"));
                     if(strcpy(jsonItem->item.jsonValue.type, "Integer") == 0){
                         fprintf(stderr, "Error: strcpy failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
                         exit(1);
@@ -669,13 +655,13 @@ void token_function_finder(Token *token, JsonItem* jsonItem, PointerList* pointe
         case(Btrue):
             switch(jsonItem->type){
                 case(JSON_VALUE):
-                    jsonItem->item.jsonValue.type = malloc(sizeof("Boolean"));
+                    jsonItem->item.jsonValue.type = arena_alloc(arena, sizeof("Boolean"));
                     if(strcpy(jsonItem->item.jsonValue.type, "Boolean") == 0){
                         fprintf(stderr, "Error: strcpy failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
                         exit(1);
                     }
 
-                    jsonItem->item.jsonValue.value = malloc(sizeof(token->tokens[index]));
+                    jsonItem->item.jsonValue.value = arena_alloc(arena, sizeof(token->tokens[index]));
                     if(strcpy(jsonItem->item.jsonValue.value, token->tokens[index]) == 0){
                         fprintf(stderr, "Error: strcpy failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
                         exit(1);
@@ -685,14 +671,14 @@ void token_function_finder(Token *token, JsonItem* jsonItem, PointerList* pointe
                     break;
                 case(JSON_KEY_VALUE_PAIR):
 
-                    jsonItem->item.jsonKeyValue.value = malloc(sizeof(token->tokens));
+                    jsonItem->item.jsonKeyValue.value = arena_alloc(arena, sizeof(token->tokens[index]));
                     if(strcpy(jsonItem->item.jsonKeyValue.value, token->tokens[index]) == 0){
                         fprintf(stderr, "Error: strcpy failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
                         exit(1);
                     }
                     free(jsonItem->item.jsonKeyValue.type);
 
-                    jsonItem->item.jsonValue.type = malloc(sizeof("Boolean"));
+                    jsonItem->item.jsonValue.type = arena_alloc(arena, sizeof("Boolean"));
                     if(strcpy(jsonItem->item.jsonValue.type, "Boolean") == 0){
                         fprintf(stderr, "Error: strcpy failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
                         exit(1);
@@ -707,13 +693,13 @@ void token_function_finder(Token *token, JsonItem* jsonItem, PointerList* pointe
         case(Bfalse):
             switch(jsonItem->type){
                 case(JSON_VALUE):
-                    jsonItem->item.jsonValue.type = malloc(sizeof("Boolean"));
+                    jsonItem->item.jsonValue.type = arena_alloc(arena, sizeof("Boolean"));
                     if(strcpy(jsonItem->item.jsonValue.type, "Boolean") == 0){
                         fprintf(stderr, "Error: strcpy failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
                         exit(1);
                     }
 
-                    jsonItem->item.jsonValue.value = malloc(sizeof(token->tokens[index]));
+                    jsonItem->item.jsonValue.value = arena_alloc(arena, sizeof(token->tokens[index]));
                     if(strcpy(jsonItem->item.jsonValue.value, token->tokens[index]) == 0){
                         fprintf(stderr, "Error: strcpy failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
                         exit(1);
@@ -723,14 +709,14 @@ void token_function_finder(Token *token, JsonItem* jsonItem, PointerList* pointe
                     break;
                 case(JSON_KEY_VALUE_PAIR):
 
-                    jsonItem->item.jsonKeyValue.value = malloc(sizeof(token->tokens));
+                    jsonItem->item.jsonKeyValue.value = arena_alloc(arena, sizeof(token->tokens[index]));
                     if(strcpy(jsonItem->item.jsonKeyValue.value, token->tokens[index]) == 0){
                         fprintf(stderr, "Error: strcpy failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
                         exit(1);
                     }
                     free(jsonItem->item.jsonKeyValue.type);
 
-                    jsonItem->item.jsonValue.type = malloc(sizeof("Boolean"));
+                    jsonItem->item.jsonValue.type = arena_alloc(arena, sizeof("Boolean"));
                     if(strcpy(jsonItem->item.jsonValue.type, "Boolean") == 0){
                         fprintf(stderr, "Error: strcpy failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
                         exit(1);
@@ -798,40 +784,4 @@ Token* token_print_tokens(Token* token){
         }
     }
     return token;
-}
-
-PointerList* create_pointer_list(){
-    PointerList* pointerList = calloc(1, sizeof(PointerList));
-    if(pointerList == NULL){
-        fprintf(stderr, "Malloc failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
-        exit(1);
-    }
-    pointerList->maxNumber = 2;
-    pointerList->ptr = malloc(sizeof(void*) * pointerList->maxNumber);
-    if(pointerList->ptr == NULL){
-        fprintf(stderr, "Malloc failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
-        exit(1);
-    }
-    return pointerList;
-}
-
-PointerList* resize_pointer_list(PointerList* pointerList){
-    int maxNumber = pointerList->maxNumber * 2;
-    void** newPtr = realloc(pointerList->ptr, sizeof(void*) * maxNumber);
-    if(newPtr == NULL){
-        fprintf(stderr, "Realloc failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
-        exit(1);
-    }
-    pointerList->ptr = newPtr;
-    pointerList->maxNumber = maxNumber;
-
-    return pointerList;
-}
-
-void free_pointer_list(PointerList* pointerList){
-    for(int i = 0; i < pointerList->count; i++){
-        free(pointerList->ptr[i]);
-    }
-    free(pointerList->ptr);
-    free(pointerList);
 }
