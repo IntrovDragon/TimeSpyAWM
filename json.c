@@ -16,7 +16,7 @@ int main(){
 
     printf("%s\n", json_array_of_objects);
 
-    Arena** arena = arena_create(4024); // Create an arena with an initial size of 2048 bytes
+    Arena** arena = arena_create(2024); // Create an arena with an initial size of 2048 bytes
 
     JsonItem* jsonItem = json_init((char*)json_array_of_objects, arena);
 
@@ -54,6 +54,7 @@ Arena** arena_create(int size){
 }
 
 void* arena_alloc(Arena** arena, int size){
+    printf("Allocating %d bytes\n", size);
     if(arena[0] == NULL || arena[0]->start == NULL){
         fprintf(stderr, "Error: Arena is NULL!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
         return NULL;
@@ -63,14 +64,19 @@ void* arena_alloc(Arena** arena, int size){
         return NULL;
     }
 
-    if(arena[0]->offset + size > arena[0]->start + arena[0]->size){
-        arena = arena_resize(arena, arena[0]->size);
-    }
     int modulo = (uintptr_t)arena[0]->offset % size;
+    if(arena[0]->offset + size - modulo + size > arena[0]->start + arena[0]->size){
+        if(size > arena[0]->size){
+            arena = arena_resize(arena, size * 2); // Resize the arena to double the size if the requested size is larger than the current size
+        }
+        else{
+            arena = arena_resize(arena, arena[0]->size);
+        }
+    }
     void* ptr;
     if(modulo != 0){
         ptr = arena[0]->offset + (size - modulo); // Align the pointer to the next multiple of size
-        memset(ptr, 0, size - modulo); // Initialize the allocated memory to zero
+        memset(ptr, 0, size); // Initialize the allocated memory to zero
     }
     else{
         ptr = arena[0]->offset;
@@ -283,7 +289,6 @@ Token* token_tokenizer(char *string, Arena** arena){
                     fprintf(stderr, "Error: Integer seperated by unknown character!, Line: %d, Function: %s\n", __LINE__, __func__);
                     exit(1);
                 }
-                printf("Token: %d\n", *(int*)token->tokens[count]);
                 count++;
                 break;
             case('t'):
