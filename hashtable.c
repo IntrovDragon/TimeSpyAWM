@@ -12,9 +12,9 @@
 * @return A pointer to the newly created hash table.
 */
 
-JsonObject* hs_create(int size){
+JsonObject* hs_create(int size, Arena** arena){
     // Allocate memory for a JsonObject structure
-    JsonObject* table = malloc(sizeof(JsonObject));
+    JsonObject* table = arena_alloc(arena, sizeof(JsonObject));
 
     // Set the maximum number of item the hash table can hold
     table->maxNumber = size;
@@ -23,7 +23,7 @@ JsonObject* hs_create(int size){
     table->count = 0;
 
     // Allocate memory for an array of JsonKeyValue pointers, initialized to NULL
-    table->item = calloc(size, sizeof(JsonKeyValue));
+    table->item = arena_alloc(arena, sizeof(JsonKeyValue) * size);
     if(table->item == NULL){
         fprintf(stderr, "Error, couldnt allocate memory!\n");
         exit(1);
