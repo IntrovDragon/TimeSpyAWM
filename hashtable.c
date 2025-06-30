@@ -73,7 +73,7 @@ int hs_insert_item(JsonObject* table, char* key, char* value){
     }
 
     table->item[keyCounter].key = strdup(key);
-    table->item[keyCounter].value = strdup(value);
+    table->item[keyCounter].data.value = strdup(value);
     table->count++;
 
     return 0;
@@ -98,7 +98,7 @@ void hs_delete_item(JsonObject* table, JsonKeyValue* item){
         if(table->item[keyCounter].key != NULL && item->key == table->item[keyCounter].key)
         {
             free(table->item[keyCounter].key);
-            free(table->item[keyCounter].value);
+            free(table->item[keyCounter].data.value);
             free(table->item);
             table->item[keyCounter].key = NULL; // to make it a null pointer again
             table->count--;
@@ -116,7 +116,7 @@ void hs_delete_table(JsonObject* table){
         }
         if(table->item[counter].key != NULL){
             free(table->item[counter].key);
-            free(table->item[counter].value);
+            free(table->item[counter].data.value);
             free(table->item);
             table->item[counter].key = NULL; // to make it a null pointer again
             table->count--;

@@ -13,12 +13,28 @@ typedef struct{
 typedef struct{
     char* type;
     char* key;
-    void* value;
+    union {
+        int integerValue;
+        double doubleValue;
+        char* stringValue;
+        int booleanValue; // 1 for true, 0 for false
+        void* jsonArray; // Pointer to a JsonArray
+        void* jsonObject; // Pointer to a JsonArray
+        void* value; // To pass the entire data structure
+    } data;
 } JsonKeyValue;
 
 typedef struct{
     char* type;
-    void* value;
+    union {
+        int integerValue;
+        double doubleValue;
+        char* stringValue;
+        int booleanValue; // 1 for true, 0 for false
+        void* jsonArray; // Pointer to a JsonArray
+        void* jsonObject; // Pointer to a JsonArray
+        void* value; // To pass the entire data structure
+    } data;
 } JsonValue;
 
 // F*#king love c for this :D // Just have to rewrite a bit of code.... :/
@@ -42,13 +58,6 @@ typedef struct{
     uint64_t count;
     uint64_t maxNumber;
 } JsonObject;
-
-// keeps track of the nested pointers. A object can hold more objects and same for arrays...
-typedef struct{
-    void** ptr;
-    uint16_t count;
-    uint16_t maxNumber;
-} PointerList;
 
 typedef struct Arena{
     void* start; // Pointer to the start of the memory block

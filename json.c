@@ -20,6 +20,15 @@ int main(){
 
     JsonItem* jsonItem = json_init((char*)json_array_of_objects, arena);
 
+    JsonArray* jsonArray = jsonItem->item.jsonValue.data.jsonArray;
+
+    JsonObject* jsonObject = jsonArray->item[0].data.jsonObject;
+
+    JsonKeyValue item1 = get_key_value_object(jsonObject, "id");
+
+    printf("Type: %s\n", item1.type);
+    printf("Value: %d\n", item1.data.integerValue);
+
     json_close(arena);
 
     return 0;
@@ -54,7 +63,7 @@ Arena** arena_create(int size){
 }
 
 void* arena_alloc(Arena** arena, int size){
-    printf("Allocating %d bytes\n", size);
+    // printf("Allocating %d bytes\n", size);
     if(arena[0] == NULL || arena[0]->start == NULL){
         fprintf(stderr, "Error: Arena is NULL!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
         return NULL;
@@ -65,6 +74,7 @@ void* arena_alloc(Arena** arena, int size){
     }
 
     int modulo = (uintptr_t)arena[0]->offset % size;
+    // size - modulo is for the padding bytes and then + size is for the actual size of the allocation
     if(arena[0]->offset + size - modulo + size > arena[0]->start + arena[0]->size){
         if(size > arena[0]->size){
             arena = arena_resize(arena, size * 2); // Resize the arena to double the size if the requested size is larger than the current size
@@ -75,6 +85,7 @@ void* arena_alloc(Arena** arena, int size){
     }
     void* ptr;
     if(modulo != 0){
+        // printf("Padding %d bytes\n", size - modulo);
         ptr = arena[0]->offset + (size - modulo); // Align the pointer to the next multiple of size
         memset(ptr, 0, size); // Initialize the allocated memory to zero
     }
@@ -88,7 +99,7 @@ void* arena_alloc(Arena** arena, int size){
 }
 
 Arena** arena_resize(Arena** arena, int size){ // use pointer to another pointer to keep track of the active arena
-    printf("Resizing arena to %d bytes\n", size);
+    // printf("Resizing arena to %d bytes\n", size);
     Arena* newArena = calloc(1, sizeof(Arena));
     if(arena == NULL || arena[0]->start == NULL){
         fprintf(stderr, "Error: Arena is NULL!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
@@ -118,6 +129,12 @@ void arena_destroy(Arena** arena){
         return;
     }
     printf("endtest\n");
+    while(arena[0]->prev != NULL){ // Free all arenas in the chain
+        Arena* temp = arena[0];
+        arena[0] = arena[0]->prev;
+        free(temp->start); // Free the memory block
+        free(temp); // Free the arena structure
+    }
     free(arena[0]->start); // Free the memory block
     free(arena[0]); // Free the arena structure
     free(arena); // Free the pointer to the arena structure
@@ -148,6 +165,9 @@ JsonItem* json_init(char* jsonString, Arena** arena){
 
   
     token_function_finder(token, jsonItem, arena);
+    // printf("Address of jsonItem: %p\n", (void*)jsonItem);
+    // printf("Type of jsonItem: %d\n", jsonItem->type);
+    // printf("Address of jsonItem->item.jsonValue.value: %p\n", (void*)jsonItem->item.jsonValue.value);
 
     return jsonItem;
 }
@@ -277,13 +297,15 @@ Token* token_tokenizer(char *string, Arena** arena){
                     fprintf(stderr, "Malloc failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
                     exit(1);
                 }
+                *((uint8_t*)(token->tokens[count])) = 0; // initialize the first byte to 0
                 for(int n = 0; string[i] <= '9' && string[i] >= '0' || string[i] == '.'; n++){
-                    *((int*)(token->tokens[count])+n) = string[i] - '0'; // convert char to int
+                    *((uint8_t*)(token->tokens[count])) += string[i] - '0'; // convert char to int
                     if(string[i] == '.'){
                         *((uint8_t*)(token->tokens[count-1])) = Float;
                     }
                     i++;
                 }
+                // printf("Number: %d\n", *((uint8_t*)(token->tokens[count])));
                 // Point is the only allowed symbole for now!
                 if((string[i] < '0' || string[i] > '9' || string[i] == '.') && string[i] != ','&& string[i] != '{' && string[i] != '}' && string[i] != '[' && string[i] != ']' && string[i] != ':'){
                     fprintf(stderr, "Error: Integer seperated by unknown character!, Line: %d, Function: %s\n", __LINE__, __func__);
@@ -384,7 +406,7 @@ JsonObject* parse_object(Token* token, Arena** arena){
     token->index++;
     int braceCounter = 1;
     while(braceCounter > 0){
-        switch(*((int*)token->tokens[token->index])){
+        switch(*((uint8_t*)token->tokens[token->index])){
             case(OpenBrace):
                 braceCounter++;
                 break;
@@ -401,25 +423,25 @@ JsonObject* parse_object(Token* token, Arena** arena){
             break;
 
         if(jsonItem->type == JSON_KEY_VALUE_PAIR){
-            if(jsonItem->item.jsonKeyValue.value != NULL){
+            if(jsonItem->item.jsonKeyValue.data.value != NULL){
                 item->type = jsonItem->item.jsonKeyValue.type;
                 item->key = jsonItem->item.jsonKeyValue.key;
-                item->value = jsonItem->item.jsonKeyValue.value;
+                item->data.value = jsonItem->item.jsonKeyValue.data.value;
 
                 jsonItem->item.jsonKeyValue.type = NULL;
                 jsonItem->item.jsonKeyValue.key = NULL;
-                jsonItem->item.jsonKeyValue.value = NULL;
+                jsonItem->item.jsonKeyValue.data.value = NULL;
                 jsonItem->type = JSON_VALUE;
             }
-            if(item->type != NULL && item->key != NULL && item->value != NULL){
+            if(item->type != NULL && item->key != NULL && item->data.value != NULL){
                 jsonObject->item[hs_hashfunction(item->key)].type = item->type;
                 jsonObject->item[hs_hashfunction(item->key)].key = item->key;
-                jsonObject->item[hs_hashfunction(item->key)].value = item->value;
+                jsonObject->item[hs_hashfunction(item->key)].data.value = item->data.value;
 
                 // Resets the item 
                 item->type = NULL;
                 item->key = NULL;
-                item->value = NULL;
+                item->data.value = NULL;
                 jsonObject->count++;
             }
         }
@@ -455,7 +477,7 @@ JsonArray* parse_array(Token* token, Arena** arena){
     int index = 0;
     int bracketCount = 1; // if bracket count is > 1 it means that he still goes through the array if = 0 he reached the CloseBracket
     while(bracketCount > 0){
-        switch(*((int*)token->tokens[token->index])){
+        switch(*((uint8_t*)token->tokens[token->index])){
             case(OpenBracket):
                 bracketCount++;
                 break;
@@ -472,15 +494,15 @@ JsonArray* parse_array(Token* token, Arena** arena){
             break;
 
         if(jsonItem->type == JSON_VALUE){
-            if(jsonItem->item.jsonValue.type != NULL && jsonItem->item.jsonValue.value != NULL){
+            if(jsonItem->item.jsonValue.type != NULL && jsonItem->item.jsonValue.data.value != NULL){
 
                 jsonArray->item[index].type = jsonItem->item.jsonValue.type;
-                jsonArray->item[index].value = jsonItem->item.jsonValue.value;
+                jsonArray->item[index].data.value = jsonItem->item.jsonValue.data.value;
 
                 // Resets the jsonItem 
                 jsonItem->type = JSON_VALUE;
                 jsonItem->item.jsonValue.type = NULL;
-                jsonItem->item.jsonValue.value = NULL;
+                jsonItem->item.jsonValue.data.value = NULL;
                 index++;
             }
         }
@@ -493,7 +515,7 @@ JsonArray* parse_array(Token* token, Arena** arena){
 
 void token_function_finder(Token *token, JsonItem* jsonItem, Arena** arena){
     int index = token->index;
-    switch(*(int*)token->tokens[index]){
+    switch(*(uint8_t*)token->tokens[index]){
         case(OpenBrace):
             switch(jsonItem->type){
                 case(JSON_VALUE):
@@ -505,7 +527,7 @@ void token_function_finder(Token *token, JsonItem* jsonItem, Arena** arena){
                     JsonObject* jsonObject = parse_object(token, arena);
                     if(jsonObject->count == 0)
                         break;
-                    jsonItem->item.jsonValue.value = jsonObject;
+                    jsonItem->item.jsonValue.data.jsonObject = jsonObject;
                     break;
                 case(JSON_KEY_VALUE_PAIR):
                     jsonItem->item.jsonKeyValue.type = arena_alloc(arena, sizeof("JsonObject"));
@@ -516,7 +538,7 @@ void token_function_finder(Token *token, JsonItem* jsonItem, Arena** arena){
                     jsonObject = parse_object(token, arena);
                     if(jsonObject->count == 0)
                         break;
-                    jsonItem->item.jsonKeyValue.value = jsonObject;
+                    jsonItem->item.jsonKeyValue.data.jsonObject = jsonObject;
                     break;
                 default:
                     fprintf(stderr, "Error: Unknown Type!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
@@ -535,9 +557,9 @@ void token_function_finder(Token *token, JsonItem* jsonItem, Arena** arena){
                         exit(1);
                     }
                     JsonArray* jsonArray = parse_array(token, arena);
-                    if(jsonArray->item[jsonArray->count-1].value == NULL)
+                    if(jsonArray->item[jsonArray->count-1].data.value == NULL)
                         break;
-                    jsonItem->item.jsonValue.value = jsonArray;
+                    jsonItem->item.jsonValue.data.jsonArray = jsonArray;
                     break;
                 case(JSON_KEY_VALUE_PAIR):
                     jsonItem->item.jsonKeyValue.type = arena_alloc(arena, sizeof("JsonArray"));
@@ -545,10 +567,9 @@ void token_function_finder(Token *token, JsonItem* jsonItem, Arena** arena){
                         fprintf(stderr, "Error: strcpy failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
                         exit(1);
                     }
-                    jsonArray = parse_array(token, arena);
-                    if(jsonArray->item[jsonArray->count-1].value == NULL)
+                    if(jsonArray->item[jsonArray->count-1].data.value == NULL)
                         break;
-                    jsonItem->item.jsonKeyValue.value = jsonArray;
+                    jsonItem->item.jsonKeyValue.data.jsonArray = jsonArray;
                     break;
                 default:
                     fprintf(stderr, "Error: Unknown Type!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
@@ -567,12 +588,12 @@ void token_function_finder(Token *token, JsonItem* jsonItem, Arena** arena){
             jsonItem->type = JSON_KEY_VALUE_PAIR;
 
             // free(jsonItem->item.jsonValue.type);
-            void* value = jsonItem->item.jsonValue.value;
+            void* value = jsonItem->item.jsonValue.data.value; // save the value for later use
 
             // since inside the jsonItem was a jsonValue i can change the value to key since the key gets always read first!
             jsonItem->item.jsonKeyValue.type = NULL;
             jsonItem->item.jsonKeyValue.key = value;
-            jsonItem->item.jsonKeyValue.value = NULL;
+            jsonItem->item.jsonKeyValue.data.value = NULL;
             break;
         case(String):
             switch(jsonItem->type){
@@ -583,8 +604,8 @@ void token_function_finder(Token *token, JsonItem* jsonItem, Arena** arena){
                         exit(1);
                     }
 
-                    jsonItem->item.jsonValue.value = arena_alloc(arena, sizeof(token->tokens[index + 1]));
-                    if(strcpy(jsonItem->item.jsonValue.value, token->tokens[index + 1]) == 0){
+                    jsonItem->item.jsonValue.data.stringValue = arena_alloc(arena, sizeof(token->tokens[index + 1]));
+                    if(strcpy(jsonItem->item.jsonValue.data.stringValue, token->tokens[index + 1]) == 0){
                         fprintf(stderr, "Error: strcpy failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
                         exit(1);
                     }
@@ -593,13 +614,14 @@ void token_function_finder(Token *token, JsonItem* jsonItem, Arena** arena){
                     break;
                 case(JSON_KEY_VALUE_PAIR):
 
-                    jsonItem->item.jsonKeyValue.value = arena_alloc(arena, sizeof(token->tokens+1));
-                    if(strcpy(jsonItem->item.jsonKeyValue.value, token->tokens[index+1]) == 0){
+                    jsonItem->item.jsonKeyValue.data.stringValue = arena_alloc(arena, sizeof(token->tokens[index + 1]));
+                    if(strcpy(jsonItem->item.jsonKeyValue.data.stringValue, token->tokens[index+1]) == 0){
                         fprintf(stderr, "Error: strcpy failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
                         exit(1);
                     }
                     // free(jsonItem->item.jsonKeyValue.type);
 
+                    // printf("Size of token->tokens[index + 1]: %zu\n", sizeof(token->tokens[index + 1]));
                     jsonItem->item.jsonValue.type = arena_alloc(arena, sizeof("String"));
                     if(strcpy(jsonItem->item.jsonValue.type, "String") == 0){
                         fprintf(stderr, "Error: strcpy failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
@@ -621,21 +643,13 @@ void token_function_finder(Token *token, JsonItem* jsonItem, Arena** arena){
                         exit(1);
                     }
 
-                    jsonItem->item.jsonValue.value = arena_alloc(arena, sizeof(token->tokens[index + 1]));
-                    if(strcpy(jsonItem->item.jsonValue.value, token->tokens[index + 1]) == 0){
-                        fprintf(stderr, "Error: strcpy failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
-                        exit(1);
-                    }
+                    jsonItem->item.jsonValue.data.integerValue = *(int*)token->tokens[index + 1];
 
                     token->index++;
                     break;
                 case(JSON_KEY_VALUE_PAIR):
 
-                    jsonItem->item.jsonKeyValue.value = arena_alloc(arena, sizeof(token->tokens[index+1]));
-                    if(strcpy(jsonItem->item.jsonKeyValue.value, token->tokens[index+1]) == 0){
-                        fprintf(stderr, "Error: strcpy failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
-                        exit(1);
-                    }
+                    jsonItem->item.jsonKeyValue.data.integerValue = *(int*)token->tokens[index + 1];
                     // free(jsonItem->item.jsonKeyValue.type);
 
                     jsonItem->item.jsonValue.type = arena_alloc(arena, sizeof("Integer"));
@@ -659,21 +673,13 @@ void token_function_finder(Token *token, JsonItem* jsonItem, Arena** arena){
                         exit(1);
                     }
 
-                    jsonItem->item.jsonValue.value = arena_alloc(arena, sizeof(token->tokens[index]));
-                    if(strcpy(jsonItem->item.jsonValue.value, token->tokens[index]) == 0){
-                        fprintf(stderr, "Error: strcpy failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
-                        exit(1);
-                    }
+                    jsonItem->item.jsonValue.data.booleanValue = *(int*)token->tokens[index];
 
                     token->index++;
                     break;
                 case(JSON_KEY_VALUE_PAIR):
 
-                    jsonItem->item.jsonKeyValue.value = arena_alloc(arena, sizeof(token->tokens[index]));
-                    if(strcpy(jsonItem->item.jsonKeyValue.value, token->tokens[index]) == 0){
-                        fprintf(stderr, "Error: strcpy failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
-                        exit(1);
-                    }
+                    jsonItem->item.jsonKeyValue.data.booleanValue = *(int*)token->tokens[index];
                     // free(jsonItem->item.jsonKeyValue.type);
 
                     jsonItem->item.jsonValue.type = arena_alloc(arena, sizeof("Boolean"));
@@ -697,21 +703,13 @@ void token_function_finder(Token *token, JsonItem* jsonItem, Arena** arena){
                         exit(1);
                     }
 
-                    jsonItem->item.jsonValue.value = arena_alloc(arena, sizeof(token->tokens[index]));
-                    if(strcpy(jsonItem->item.jsonValue.value, token->tokens[index]) == 0){
-                        fprintf(stderr, "Error: strcpy failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
-                        exit(1);
-                    }
+                    jsonItem->item.jsonValue.data.booleanValue = *(int*)token->tokens[index];
 
                     token->index++;
                     break;
                 case(JSON_KEY_VALUE_PAIR):
 
-                    jsonItem->item.jsonKeyValue.value = arena_alloc(arena, sizeof(token->tokens[index]));
-                    if(strcpy(jsonItem->item.jsonKeyValue.value, token->tokens[index]) == 0){
-                        fprintf(stderr, "Error: strcpy failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
-                        exit(1);
-                    }
+                    jsonItem->item.jsonKeyValue.data.booleanValue = *(int*)token->tokens[index];
                     // free(jsonItem->item.jsonKeyValue.type);
 
                     jsonItem->item.jsonValue.type = arena_alloc(arena, sizeof("Boolean"));
@@ -739,6 +737,7 @@ JsonKeyValue get_key_value_object(JsonObject *object, char *key){
 }
 
 Token* token_print_tokens(Token* token){
+    // printf("Token Count: %d\n", token->count);
     for(int i = 0; i < token->count; i++){
         switch(*(uint8_t*)(token->tokens[i])){
             case(OpenBrace):
@@ -764,11 +763,11 @@ Token* token_print_tokens(Token* token){
                 i++;
                 break;
             case(Integer):
-                printf("Integer: %s\n", (char*)token->tokens[i+1]);
+                printf("Integer: %d\n", *(int*)token->tokens[i+1]);
                 i++;
                 break;
             case(Float):
-                printf("Float: %s\n", (char*)token->tokens[i+1]);
+                printf("Float: %f\n", *(float*)token->tokens[i+1]);
                 i++;
                 break;
             case(Btrue):

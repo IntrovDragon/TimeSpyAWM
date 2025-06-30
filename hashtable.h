@@ -5,7 +5,7 @@
 
 
 // Fixed size for hashtable | should fix this
-#define Size 100
+#define Size 30
 
 
 JsonObject* hs_create(int size, Arena** arena);
