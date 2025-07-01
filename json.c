@@ -16,7 +16,7 @@ int main(){
 
     printf("%s\n", json_array_of_objects);
 
-    Arena** arena = arena_create(2024); // Create an arena with an initial size of 2048 bytes
+    Arena** arena = arena_create(2048); // Create an arena with an initial size of 2048 bytes
 
     JsonItem* jsonItem = json_init((char*)json_array_of_objects, arena);
 
@@ -156,7 +156,7 @@ JsonItem* json_init(char* jsonString, Arena** arena){
     token_print_tokens(token);
 
 
-    JsonItem* jsonItem = calloc(1, sizeof(JsonItem));
+    JsonItem* jsonItem = arena_alloc(arena, sizeof(JsonItem));
     if(jsonItem == NULL){
         fprintf(stderr, "Malloc failed!, Line: %d, Function: %s\n", __LINE__, __FUNCTION__);
 
@@ -448,8 +448,8 @@ JsonObject* parse_object(Token* token, Arena** arena){
     }
     fin:
 
-    // free(item);
-    // free(jsonItem);
+    free(item);
+    free(jsonItem);
     return jsonObject;
 }
 
@@ -509,7 +509,7 @@ JsonArray* parse_array(Token* token, Arena** arena){
     }
     fin:
     jsonArray->count = index;
-    // free(jsonItem);
+    free(jsonItem);
     return jsonArray;
 }
 
